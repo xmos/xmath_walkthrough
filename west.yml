@@ -4,7 +4,11 @@ manifest:
     - name: lib_xcore_math
       url: https://github.com/xmos/lib_xcore_math
       revision: v2.1.1
+      path: xmath_walkthrough/lib_xcore_math
     - name: xmos_cmake_toolchain
       url: https://github.com/xmos/xmos_cmake_toolchain
+      revision: main
+      path: xmath_walkthrough/xmos_cmake_toolchain
     - name: xscope_fileio
       url: https://github.com/xmos/xscope_fileio
+      path: xmath_walkthrough/xscope_fileio
