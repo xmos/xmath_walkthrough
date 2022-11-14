@@ -38,11 +38,30 @@ void send_frame(
     frame->data[s] = chan_in_word(c_pcm_in);
 }
 
+void write_performance_info(
+    unsigned stage_num, 
+    float ave_filter_time_ns)
+{
+  file_t perf_file;
+  char fn_buff[30];
+  sprintf(fn_buff, "perf/stage%u.json", stage_num);
+  file_open(&perf_file, fn_buff, "wb");
+
+  char str_buff[100] = {0};
+  unsigned c = sprintf(str_buff, "{\n\"filter_time\": %0.02f,\n\"tap_time\": %0.02f\n}\n", 
+                    ave_filter_time_ns,
+                    ave_filter_time_ns / 1024);
+  file_write(&perf_file, str_buff, c);
+
+  file_close(&perf_file);
+}
+
 
 void wav_io_thread(
   chanend_t c_pcm_out, 
   chanend_t c_pcm_in, 
   chanend_t c_timing,
+  unsigned stage_number,
   const char* input_file_name, 
   const char* output_file_name)
 {
@@ -161,6 +180,6 @@ void wav_io_thread(
 
   unsigned tmp = chan_in_word(c_timing);
   float timing_ns = ((float*)&tmp)[0];
-
+  write_performance_info(stage_number, timing_ns);
   printf("Average filter time: %0.02f ns\n", timing_ns);
 }

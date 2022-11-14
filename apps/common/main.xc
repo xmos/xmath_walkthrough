@@ -35,7 +35,7 @@ int main(){
 
           wav_io_thread(c_tile0_to_tile1, 
                       c_tile1_to_tile0, 
-                      c_timing,
+                      c_timing, STAGE_NUMBER,
                       "wav/input.wav", str_buff);
           _Exit(0);
         }
