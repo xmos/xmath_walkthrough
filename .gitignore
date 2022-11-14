@@ -1,0 +1,4 @@
+**/*.xe
+**/*.exe
+**/.build/
+.vscode/
