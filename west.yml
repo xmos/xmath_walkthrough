@@ -1,0 +1,10 @@
+manifest:
+
+  projects:
+    - name: lib_xcore_math
+      url: https://github.com/xmos/lib_xcore_math
+      revision: v2.1.1
+    - name: xmos_cmake_toolchain
+      url: https://github.com/xmos/xmos_cmake_toolchain
+    - name: xscope_fileio
+      url: https://github.com/xmos/xscope_fileio
