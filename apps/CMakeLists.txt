@@ -20,8 +20,3 @@ add_subdirectory( stage9 )
 add_subdirectory( stage10 )
 add_subdirectory( stage11 )
 add_subdirectory( stage12 )
-
-install(TARGETS 
-    stage0 stage1 stage2 stage3 stage4 stage5 stage6
-    stage7 stage8 stage9 stage10 stage11 stage12
-        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/bin )

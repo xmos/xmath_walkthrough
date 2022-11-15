@@ -46,4 +46,7 @@ target_link_options( ${APP_NAME}
       -fxscope
 )
 
+install(TARGETS ${APP_NAME} 
+        DESTINATION ${WORKSPACE_PATH}/bin )
+
 

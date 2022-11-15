@@ -1,8 +1,11 @@
 import numpy as np
 import xscope_fileio
 import os
+from pathlib import Path
 import argparse
 
+SCRIPT_DIR = (Path(__file__).parent)
+OUT_DIR = (SCRIPT_DIR / "out")
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
@@ -15,8 +18,17 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
 
-  for stage in args.stages:
-    firmware = os.path.join("bin", stage + ".xe")
+  firmware_map = {stage: os.path.join("bin", stage + ".xe") for stage in args.stages}
+
+  # Verify firmware exists for each stage before executing anything.
+  for stage,firmware in firmware_map.items():
+    assert os.path.exists(firmware), f"Firmware for {stage} not found ({firmware}). Did you build and install?"
+
+  # Ensure output directory exists
+  os.makedirs(OUT_DIR, exist_ok=True)
+
+  # Run the app
+  for stage,firmware in firmware_map.items():
     xscope_fileio.run_on_target(args.adapter_id, 
                                 firmware, 
                                 use_xsim=False)
