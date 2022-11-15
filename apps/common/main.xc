@@ -31,7 +31,7 @@ int main(){
           printf("Running Application: stage%u\n", STAGE_NUMBER);
 
           char str_buff[100];
-          sprintf(str_buff, "wav/output-stage%u.wav", STAGE_NUMBER);
+          sprintf(str_buff, "out/output-stage%u.wav", STAGE_NUMBER);
 
           wav_io_thread(c_tile0_to_tile1, 
                       c_tile1_to_tile0, 

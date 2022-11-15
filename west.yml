@@ -8,7 +8,7 @@ manifest:
     - name: xmos_cmake_toolchain
       url: https://github.com/xmos/xmos_cmake_toolchain
       revision: main
-      path: xmath_walkthrough/xmos_cmake_toolchain
+      path: xmos_cmake_toolchain
     - name: xscope_fileio
       url: https://github.com/astewart-xmos/xscope_fileio
       revision: master
