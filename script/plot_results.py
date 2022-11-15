@@ -10,7 +10,7 @@ signals = dict()
 
 if True:
   fname = "output-ref.wav"
-  fpath = os.path.join("wav", fname)
+  fpath = os.path.join("out", fname)
   if os.path.exists(fpath):
     rate, samples = wavfile.read(fpath)
     assert rate == SAMPLE_RATE, f"Sample rate of {fname} was wrong. Was {rate}, expected {SAMPLE_RATE}."
@@ -18,7 +18,7 @@ if True:
 
 for k in range(13):
   fname = f"output-stage{k}.wav"
-  fpath = os.path.join("wav", fname)
+  fpath = os.path.join("out", fname)
   if not os.path.exists(fpath):
     continue
   rate, samples = wavfile.read(fpath)

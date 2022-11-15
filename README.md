@@ -139,7 +139,7 @@ First, you will need the adapter ID of your attached xcore device. You can find
 that using `xrun -l`. For example:
 
 ```
-$> xrun -l
+$ xrun -l
 
 Available XMOS Devices
 ----------------------

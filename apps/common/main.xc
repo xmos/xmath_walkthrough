@@ -16,6 +16,14 @@ extern "C" {
   extern void filter_thread(chanend c_pcm_in, chanend c_pcm_out);
 }
 
+#ifndef INPUT_WAV
+# define INPUT_WAV  "xmath_walkthrough/wav/input.wav"
+#endif
+
+#ifndef OUTPUT_WAV_FMT
+# define OUTPUT_WAV_FMT "out/output-stage%u.wav"
+#endif
+
 int main(){
     chan xscope_chan;
     chan c_tile0_to_tile1;
@@ -31,12 +39,14 @@ int main(){
           printf("Running Application: stage%u\n", STAGE_NUMBER);
 
           char str_buff[100];
-          sprintf(str_buff, "out/output-stage%u.wav", STAGE_NUMBER);
+          sprintf(str_buff, OUTPUT_WAV_FMT, STAGE_NUMBER);
 
           wav_io_thread(c_tile0_to_tile1, 
-                      c_tile1_to_tile0, 
-                      c_timing, STAGE_NUMBER,
-                      "wav/input.wav", str_buff);
+                        c_tile1_to_tile0, 
+                        c_timing, 
+                        STAGE_NUMBER,
+                        INPUT_WAV, 
+                        str_buff);
           _Exit(0);
         }
 
