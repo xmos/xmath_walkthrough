@@ -9,17 +9,11 @@ const q2_30 filter_coef[TAP_COUNT];
 
 /**
  * The exponent associatd with the filter coefficients.
- * 
- * The value represented by the k'th coefficient is 
- * `ldexp(filter_coef[k], coef_exp)`.
  */
 const exponent_t coef_exp = -30;
 
 /**
  * The exponent associated with the output signal.
- * 
- * This exponent implies 32-bit PCM samples represent a value in the range
- * `[-1.0, 1.0)`.
  */
 const exponent_t output_exp = -31;
 
@@ -34,9 +28,6 @@ const exponent_t output_exp = -31;
  * `sample_history[]`.
  * 
  * `history_hr` is the headroom present in `sample_history[]`.
- * 
- * STAGE 7 implements this filter using lib_xcore_math's low-level API. The
- * function vect_s32_dot() is optimized assembly making use of the VPU. 
  */
 q1_31 filter_sample(
     const int32_t sample_history[TAP_COUNT],
@@ -44,36 +35,25 @@ q1_31 filter_sample(
     const headroom_t history_hr)
 {
   // The accumulator into which partial results are added.
-  // This is a non-standard floating-point type with a 64-bit mantissa and
-  // an exponent.
-  float_s64_t a;
+  float_s64_t acc;
+  acc.mant = 0;
 
   // The headroom of the filter_coef[] vector. Used by vect_s32_dot_prepare().
   const headroom_t coef_hr = HR_S32(filter_coef[0]);
 
-  // vect_s32_dot_prepare() takes in the exponent and headroom of both input 
-  // vectors and the length of the vectors and gives us 3 things:
-  //  - The exponent that will be associated with the output of vect_s32_dot()
-  //  - The b_shr and c_shr shift parameters required by vect_s32_dot().
-  // vect_s32_dot_prepare() chooses these three values so as to maximize the
-  // precision of the result while avoiding overflows on the inputs or output.
+  // Determine the accumulator exponent and the shift values required by
+  // vect_s32_dot().
   right_shift_t b_shr, c_shr;
-  vect_s32_dot_prepare(&a.exp, &b_shr, &c_shr, 
+  vect_s32_dot_prepare(&acc.exp, &b_shr, &c_shr, 
                         history_exp, coef_exp,
                         history_hr, coef_hr, TAP_COUNT);
 
-  // Compute the inner product's mantissa using the shift parameters we were 
-  // given.
-  a.mant = vect_s32_dot(&sample_history[0], &filter_coef[0], TAP_COUNT, 
+  // Compute the inner product's mantissa using the given shift parameters.
+  acc.mant = vect_s32_dot(&sample_history[0], &filter_coef[0], TAP_COUNT, 
                         b_shr, c_shr);
 
-  // Much of the time in block floating-point, we don't require values to use
-  // any particular exponent. However, because we must send 32-bit PCM samples
-  // back to the host, we must ensure that all output samples are associated
-  // with the same exponent. Otherwise the output will make no sense.
-  // Here we convert our custom 64-bit float value to a 32-bit fixed-point
-  // q1_31 value.
-  q1_31 sample_out = float_s64_to_fixed(a, output_exp);
+  // Convert the result to a fixed-point value using the output exponent
+  q1_31 sample_out = float_s64_to_fixed(acc, output_exp);
 
   return sample_out;
 }
@@ -101,10 +81,6 @@ void filter_frame(
     const headroom_t history_in_hr)
 {
   // Compute FRAME_OVERLAP output samples.
-  // Each output sample will use a TAP_COUNT-sample window of the input
-  // history. That window slides over 1 element for each output sample.
-  // A timer (100 MHz freqency) is used to measure how long each output sample
-  // takes to process.
   for(int s = 0; s < FRAME_OVERLAP; s++){
     timer_start();
     frame_out[s] = filter_sample(&history_in[FRAME_OVERLAP-s-1], 
@@ -160,6 +136,7 @@ void filter_thread(
 
     // Send FRAME_OVERLAP new output samples at the end of each frame.
     for(int k = 0; k < FRAME_OVERLAP; k++){
+      // Put PCM sample in output channel
       chan_out_word(c_pcm_out, frame_output[k]);
     }
 

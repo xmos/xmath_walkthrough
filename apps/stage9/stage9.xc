@@ -14,17 +14,11 @@ const q2_30 filter_coef[TAP_COUNT];
 
 /**
  * The exponent associatd with the filter coefficients.
- * 
- * The value represented by the k'th coefficient is 
- * `ldexp(filter_coef[k], coef_exp)`.
  */
 const exponent_t coef_exp = -30;
 
 /**
  * The exponent associated with the output signal.
- * 
- * This exponent implies 32-bit PCM samples represent a value in the range
- * `[-1.0, 1.0)`.
  */
 const exponent_t output_exp = -31;
 
@@ -32,8 +26,6 @@ const exponent_t output_exp = -31;
 /**
  * Apply the filter to produce a single output sample.
  * 
- * In STAGE 9 this function will spawn multiple threads and compute the result
- * in parallel across those threads.
  * 
  * This function is implemented in stage9.xc so as to make use of the convenient
  * `par {}` syntax available in the XC language.
@@ -55,9 +47,7 @@ q1_31 filter_sample(
     const headroom_t history_hr)
 {
   // The accumulator into which partial results are added.
-  // This is a non-standard floating-point type with a 64-bit mantissa and
-  // an exponent.
-  float_s64_t a;
+  float_s64_t acc;
 
   // The headroom of the filter_coef[] vector. Used by vect_s32_dot_prepare().
   headroom_t coef_hr = HR_S32(filter_coef[0]);
@@ -71,7 +61,7 @@ q1_31 filter_sample(
   // We execute this in the master thread prior to spawning the worker threads
   // because the worker threads will each make use of the shift parameters.
   right_shift_t b_shr, c_shr;
-  vect_s32_dot_prepare(&a.exp, &b_shr, &c_shr, 
+  vect_s32_dot_prepare(&acc.exp, &b_shr, &c_shr, 
                         history_exp, coef_exp,
                         history_hr, coef_hr, TAP_COUNT);
 
@@ -95,17 +85,13 @@ q1_31 filter_sample(
   // when each thread completes.
 
   // Sum partial results for final result.
-  a.mant = 0;
+  acc.mant = 0;
   for(int k = 0; k < 4; k++)
-    a.mant += partial[k];
+    acc.mant += partial[k];
 
-  // Much of the time in block floating-point, we don't require values to use
-  // any particular exponent. However, because we must send 32-bit PCM samples
-  // back to the host, we must ensure that all output samples are associated
-  // with the same exponent. Otherwise the output will make no sense.
-  // Here we convert our custom 64-bit float value to a 32-bit fixed-point
-  // q1_31 value.
-  q1_31 sample_out = float_s64_to_fixed(a, output_exp);
+
+  // Convert the result to a fixed-point value using the output exponent
+  q1_31 sample_out = float_s64_to_fixed(acc, output_exp);
 
   return sample_out;
 }

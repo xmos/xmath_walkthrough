@@ -1,17 +1,14 @@
 // Copyright (c) 2022, XMOS Ltd, All rights reserved
-    
 #if defined(__XS3A__)
 
 .text
 .issue_mode  dual
 
 /*
-
   int64_t int32_dot(
       const int32_t x[],
       const int32_t y[],
       const unsigned length);
-
 */
 
 #define FUNC_NAME     int32_dot
@@ -50,7 +47,6 @@ FUNC_NAME:
   ldd r4, r5, sp[0]
   retsp NSTACKWORDS
     
-	
 	.cc_bottom FUNC_NAME.function
 	.set	FUNC_NAME.nstackwords,NSTACKWORDS;     .globl	FUNC_NAME.nstackwords
 	.set	FUNC_NAME.maxcores,1;                  .globl	FUNC_NAME.maxcores
@@ -58,8 +54,4 @@ FUNC_NAME:
 	.set	FUNC_NAME.maxchanends,0;               .globl	FUNC_NAME.maxchanends
 .Ltmp1:
 	.size	FUNC_NAME, .Ltmp1-FUNC_NAME
-
-#undef NSTACKWORDS
-
-
 #endif

@@ -9,17 +9,11 @@ const q2_30 filter_coef[TAP_COUNT];
 
 /**
  * The exponent associatd with the filter coefficients.
- * 
- * The value represented by the k'th coefficient is 
- * `ldexp(filter_coef[k], coef_exp)`.
  */
 const exponent_t coef_exp = -30;
 
 /**
  * The exponent associated with the output signal.
- * 
- * This exponent implies 32-bit PCM samples represent a value in the range
- * `[-1.0, 1.0)`.
  */
 const exponent_t output_exp = -31;
 
@@ -32,73 +26,59 @@ bfp_s32_t bfp_filter_coef;
 /**
  * Apply the filter to produce a single output sample.
  * 
- * `sample_history` is a BFP vector representing the `TAP_COUNT` history samples
- * needed to compute the current output.
- * 
- * STAGE 8 implements this filter using lib_xcore_math's BFP API. The
- * function bfp_s32_dot() manages exponents, headroom and selects shift 
- * parameters for you, and uses the VPU-accelerated low-level API to actually
- * compute the result.
+ * `sample_history[]` is a BFP vector representing the `TAP_COUNT` history
+ * samples needed to compute the current output.
  */
-float_s64_t filter_sample(
-    const bfp_s32_t* sample_history)
+int32_t filter_sample(
+    const bfp_s32_t* sample_history
+    const exponent_t out_exp)
 {
-  return bfp_s32_dot(sample_history, &bfp_filter_coef);
+  // Compute the dot product of sample_history[] and bfp_filter_coef[].
+  float_s64_t acc = bfp_s32_dot(sample_history, &bfp_filter_coef);
+  
+  // Convert the result to a fixed-point value using the output exponent
+  int32_t sample_out = float_s64_to_fixed(acc, out_exp);
+
+  return sample_out;
 }
 
 /**
  * Apply the filter to a frame with `FRAME_OVERLAP` new input samples, producing
  * one output sample for each new sample.
  * 
- * Computed output samples are placed into `frame_out` with the oldest samples
+ * Computed output samples are placed into `frame_out[]` with the oldest samples
  * first (forward time order).
  * 
- * `history_in` is a BFP vector containing the most recent `FRAME_SIZE` samples
- * with the newest samples first (reverse time order). The first `FRAME_OVERLAP`
- * samples of `history_in` are new.
+ * `history_in[]` is a BFP vector containing the most recent `FRAME_SIZE`
+ * samples with the newest samples first (reverse time order). The first
+ * `FRAME_OVERLAP` samples of `history_in[]` are new.
  */
 void filter_frame(
     bfp_s32_t* frame_out,
     const bfp_s32_t* history_in)
 {
 
-  // We're going to use a fake output exponent here, just to force us to convert
-  // samples to use the correct output exponent in the calling function. Note
-  // that this will also effectively lose us two bits of precision compared to
-  // using output_exp by itself.
+  // We're faking an exponent here, just for the sake of demonstrating the BFP
+  // behavior.
   frame_out->exp = output_exp+2;
 
+  // Initialize a new BFP vector which is a 'view' onto a TAP_COUNT-element 
+  // window of the history_in[] vector.
+  // The sample_history[] window will 'slide' along history_in[] for each output
+  // sample.
+  bfp_s32_t sample_history;
+  bfp_s32_init(&sample_history, &history_in->data[FRAME_OVERLAP],
+                history_in->exp, TAP_COUNT, 0);
+  // Might not be precisely correct, but is safe
+  sample_history.hr = history_in->hr;
+
   // Compute FRAME_OVERLAP output samples.
-  // Each output sample will use a TAP_COUNT-sample window of the input
-  // history. That window slides over 1 element for each output sample.
-  // A timer (100 MHz freqency) is used to measure how long each output sample
-  // takes to process.
   for(int s = 0; s < FRAME_OVERLAP; s++){
     timer_start();
-    // We're doing something a little weird here. We're going to create a
-    // 'virtual' BFP vector for the sample history for each output sample. This
-    // isn't something you would typically need to do. 
-    // The reason we need to do this is that the filter coefficient BFP vector
-    // has length TAP_COUNT, but history_in has length `FRAME_SIZE`, which
-    // makes them incompatible for `bfp_s32_dot()`. By creating this 'virtual'
-    // vector pointing to a different offset into history_in each time (and by
-    // reusing the headroom and exponent of history_in) we're supplying
-    // filter_sample() with a usable BFP vector.
-    bfp_s32_t sample_history;
-    bfp_s32_init(&sample_history, &history_in->data[FRAME_OVERLAP-s-1],
-                 history_in->exp, TAP_COUNT, 0);
-
-    // This might not be precisely correct (in case the largest magnitude sample
-    // is not included in this sub-frame), but it's guaranteed to be safe.
-    sample_history.hr = history_in->hr;
-
-    // In this case we happen to know a priori that each float_s64_t that comes
-    // out of filter_sample() will have the same exponent, because the input
-    // exponents and headroom don't change between samples. Normally we can't
-    // count on that, however, so we'll convert each output sample to the 
-    // output exponent so that we know they can share a BFP vector.
-    float_s64_t smp_out_f64 = filter_sample(&sample_history);
-    frame_out->data[s] = float_s64_to_fixed(smp_out_f64, frame_out->exp);
+    // Slide the window down one index, towards newer samples
+    sample_history.data = sample_history.data - 1;
+    // Get next output sample
+    frame_out->data[s] = filter_sample(&sample_history);
     timer_stop();
   }
 }
@@ -142,8 +122,7 @@ void filter_thread(
       frame_history.data[FRAME_OVERLAP-k-1] = sample_in;
     }
 
-    // Here we're always considering the input exponent to be -31. This need
-    // not always be the case, however.
+    // For now, the exponent associated with each new input frame is -31.
     frame_history.exp = -31;
 
     // Compute headroom of input frame
@@ -161,6 +140,7 @@ void filter_thread(
 
     // Send FRAME_OVERLAP new output samples at the end of each frame.
     for(int k = 0; k < FRAME_OVERLAP; k++){
+      // Put PCM sample in output channel
       chan_out_word(c_pcm_out, frame_output.data[k]);
     }
 

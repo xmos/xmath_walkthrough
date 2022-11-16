@@ -4,9 +4,6 @@
 /**
  * Apply the filter to produce a single output sample.
  * 
- * In STAGE 9 this function will spawn multiple threads and compute the result
- * in parallel across those threads.
- * 
  * This function is implemented in stage9.xc so as to make use of the convenient
  * `par {}` syntax available in the XC language.
  */
@@ -38,10 +35,6 @@ void filter_frame(
     const headroom_t history_in_hr)
 {
   // Compute FRAME_OVERLAP output samples.
-  // Each output sample will use a TAP_COUNT-sample window of the input
-  // history. That window slides over 1 element for each output sample.
-  // A timer (100 MHz freqency) is used to measure how long each output sample
-  // takes to process.
   for(int s = 0; s < FRAME_OVERLAP; s++){
     timer_start();
     frame_out[s] = filter_sample(&history_in[FRAME_OVERLAP-s-1], 
@@ -97,6 +90,7 @@ void filter_thread(
 
     // Send FRAME_OVERLAP new output samples at the end of each frame.
     for(int k = 0; k < FRAME_OVERLAP; k++){
+      // Put PCM sample in output channel
       chan_out_word(c_pcm_out, frame_output[k]);
     }
 
@@ -106,4 +100,3 @@ void filter_thread(
             TAP_COUNT * sizeof(int32_t));
   }
 }
-

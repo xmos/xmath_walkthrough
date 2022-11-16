@@ -9,20 +9,11 @@ const double filter_coef[TAP_COUNT];
 
 /**
  * The exponent associated with the input signal.
- * 
- * In this stage, the 32-bit PCM input samples are converted to `double` values
- * before being processed. Using an exponent of `-31` scales the PCM inputs to a 
- * floating-point value range of `[-1.0, 1.0)`.
  */
 const exponent_t input_exp = -31;
 
 /**
  * The exponent associated with the output signal.
- * 
- * In this stage, the `double`-valued output samples must be converted to 32-bit
- * PCM values before being sent back to the host. Using an exponent of `-31`
- * scales the output samples so that `[-1.0, 1.0)` maps to 
- * `[INT32_MIN, INT32_MAX]`.
  */
 const exponent_t output_exp = input_exp;
 
@@ -31,10 +22,6 @@ const exponent_t output_exp = input_exp;
  * 
  * `sample_history[]` contains the `TAP_COUNT` most-recent input samples, with
  * the newest samples first (reverse time order).
- * 
- * STAGE 0 implements this filter as a simple C loop computing the sum of 
- * products between the sample history and filter coefficients, using 
- * double-precision floating-point arithmetic.
  */
 double filter_sample(
     const double sample_history[TAP_COUNT])
@@ -65,10 +52,6 @@ void filter_frame(
     const double history_in[FRAME_SIZE])
 {
   // Compute FRAME_OVERLAP output samples.
-  // Each output sample will use a TAP_COUNT-sample window of the input
-  // history. That window slides over 1 element for each output sample.
-  // A timer (100 MHz freqency) is used to measure how long each output sample
-  // takes to process.
   for(int s = 0; s < FRAME_OVERLAP; s++){
     timer_start();
     frame_out[s] = filter_sample(&history_in[FRAME_OVERLAP-s-1]);
@@ -83,10 +66,6 @@ void filter_frame(
  * `c_pcm_in` is the channel from which PCM input samples are received.
  * 
  * `c_pcm_out` is the channel to which PCM output samples are sent.
- * 
- * STAGE 0 converts input samples to `double` to facilitate the demonstration
- * of a `double` FIR filter implemention. Under normal circumstances you would
- * not do this.
  */
 void filter_thread(
     chanend_t c_pcm_in, 
@@ -104,11 +83,11 @@ void filter_thread(
     for(int k = 0; k < FRAME_OVERLAP; k++){
       // Read PCM sample from channel
       const int32_t sample_in = (int32_t) chan_in_word(c_pcm_in);
-      // Convert PCM sample to double
-      const double sample_in_dbl = ldexp(sample_in, input_exp);
+      // Convert PCM sample to floating-point
+      const double samp_f = ldexp(sample_in, input_exp);
       // Place at beginning of history buffer in reverse order (to match the
       // order of filter coefficients).
-      frame_history[FRAME_OVERLAP-k-1] = sample_in_dbl;
+      frame_history[FRAME_OVERLAP-k-1] = samp_f;
     }
 
     // Apply the filter to the new frame of audio, producing FRAME_OVERLAP 
@@ -118,9 +97,9 @@ void filter_thread(
     // Send FRAME_OVERLAP new output samples at the end of each frame.
     for(int k = 0; k < FRAME_OVERLAP; k++){
       // Get double sample from frame output buffer (in forward order)
-      const double sample_out_dbl = frame_output[k];
+      const double samp_f = frame_output[k];
       // Convert double sample back to PCM using the output exponent.
-      const q1_31 sample_out = round(ldexp(sample_out_dbl, -output_exp));
+      const q1_31 sample_out = round(ldexp(samp_f, -output_exp));
       // Put PCM sample in output channel
       chan_out_word(c_pcm_out, sample_out);
     }
