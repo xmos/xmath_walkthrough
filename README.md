@@ -1,4 +1,9 @@
 
+# Guide
+
+To begin walking through the tutorial, start [here](apps/intro.md).
+
+# Setting Up
 
 Start by choosing a directory to serve as the root of your workspace.
 
@@ -25,7 +30,7 @@ Otherwise, you can use git to clone the repositories directly:
 git clone https://github.com/astewart-xmos/xmath_walkthrough
 git clone https://github.com/xmos/xmos_cmake_toolchain
 cd xmath_walkthrough
-git checkout v2.1.1
+git clone -b v2.1.1 https://github.com/xmos/lib_xcore_math
 git clone https://github.com/astewart-xmos/xscope_fileio
 cd ..
 ```
