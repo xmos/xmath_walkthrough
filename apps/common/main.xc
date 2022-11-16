@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 #ifndef OUTPUT_WAV_FMT
-# define OUTPUT_WAV_FMT "out/output-stage%u.wav"
+# define OUTPUT_WAV_FMT "out/output-%s.wav"
 #endif
 
 int main(){
@@ -36,15 +36,15 @@ int main(){
         {
           xscope_io_init(xscope_chan);
 
-          printf("Running Application: stage%u\n", STAGE_NUMBER);
+          printf("Running Application: %s\n", STAGE_NAME);
 
           char str_buff[100];
-          sprintf(str_buff, OUTPUT_WAV_FMT, STAGE_NUMBER);
+          sprintf(str_buff, OUTPUT_WAV_FMT, STAGE_NAME);
 
           wav_io_thread(c_tile0_to_tile1, 
                         c_tile1_to_tile0, 
                         c_timing, 
-                        STAGE_NUMBER,
+                        STAGE_NAME,
                         INPUT_WAV, 
                         str_buff);
           _Exit(0);

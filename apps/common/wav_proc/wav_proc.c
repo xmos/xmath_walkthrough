@@ -39,14 +39,14 @@ void send_frame(
 }
 
 void write_performance_info(
-    unsigned stage_num, 
+    const char* stage_name,
     float ave_filter_time_ns)
 {
   printf("Average filter time: %0.02f ns\n", ave_filter_time_ns);
 
   file_t perf_file;
   char fn_buff[30];
-  sprintf(fn_buff, "out/stage%u.json", stage_num);
+  sprintf(fn_buff, "out/%s.json", stage_name);
   file_open(&perf_file, fn_buff, "wb");
 
   char str_buff[100] = {0};
@@ -63,7 +63,7 @@ void wav_io_thread(
   chanend_t c_pcm_out, 
   chanend_t c_pcm_in, 
   chanend_t c_timing,
-  unsigned stage_number,
+  const char* stage_name,
   const char* input_file_name, 
   const char* output_file_name)
 {
@@ -182,5 +182,5 @@ void wav_io_thread(
 
   unsigned tmp = chan_in_word(c_timing);
   float timing_ns = ((float*)&tmp)[0];
-  write_performance_info(stage_number, timing_ns);
+  write_performance_info(stage_name, timing_ns);
 }

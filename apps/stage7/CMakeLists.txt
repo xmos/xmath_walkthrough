@@ -34,7 +34,8 @@ target_compile_options( ${APP_NAME}
 target_compile_definitions( ${APP_NAME}
     PRIVATE
       TEST_WAV_XSCOPE=1
-      STAGE_NUMBER=${STAGE_NUMBER}    
+      STAGE_NUMBER=${STAGE_NUMBER}
+      STAGE_NAME="${APP_NAME}"
 )
 
 target_link_options( ${APP_NAME}

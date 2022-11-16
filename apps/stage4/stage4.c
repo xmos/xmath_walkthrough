@@ -2,92 +2,18 @@
 #include "common.h"
 
 /**
- * The box filter coefficient array.
- */
-extern 
-const q4_28 filter_coef[TAP_COUNT];
-
-/**
- * The exponent associatd with the filter coefficients.
- * 
- * The value represented by the k'th coefficient is 
- * `ldexp(filter_coef[k], coef_exp)`.
- */
-const exponent_t coef_exp = -28;
-
-/**
- * The exponent associated with the input signal.
- * 
- * This exponent implies 32-bit PCM samples represent a value in the range
- * `[-1.0, 1.0)`.
- */
-const exponent_t input_exp = -31;
-
-/**
- * The exponent associated with the output signal.
- * 
- * This exponent implies 32-bit PCM samples represent a value in the range
- * `[-1.0, 1.0)`.
- */
-const exponent_t output_exp = input_exp;
-
-/**
- * The exponent associated with the accumulator.
- * 
- * The accumulator holds the 64-bit sum-of-products between the input history 
- * and filter coefficients. The associated exponents are `input_exp` and 
- * `coef_exp` respectively. The logical value represented by the `k`th term 
- * added to the accumulator is then:
- * 
- *      sample_history[k] * 2^(input_exp) * filter_coef[k] * 2^(coef_exp)
- *    = (sample_history[k] * filter_coef[k]) * 2^(input_exp + coef_exp)
- * 
- * And so `input_exp + coef_exp` is the exponent associated with the
- * accumulator. 
- */
-const exponent_t acc_exp = input_exp + coef_exp;
-
-/**
- * Arithmetic right-shift applied to the filter's accumulator in order to 
- * achieve the correct output exponent.
- * 
- * The required shift is the desired exponent, `output_exp`, minus the current
- * exponent, `acc_exp`.
- */
-const right_shift_t acc_shr = output_exp - acc_exp;
-
-/**
- * Computes the 64-bit inner product between two 32-bit integer vectors.
- * 
- * This function is implemented directly in assembly in `int32_dot.S`.
- * 
- * This function is optimized but only uses the scalar arithmetic unit, not the
- * VPU.
- */
-int64_t int32_dot(
-    const int32_t x[],
-    const int32_t y[],
-    const unsigned length);
-
-/**
  * Apply the filter to produce a single output sample.
  * 
- * `sample_history[]` contains the `TAP_COUNT` most-recent input samples, with
- * the newest samples first (reverse time order).
+ * In STAGE 9 this function will spawn multiple threads and compute the result
+ * in parallel across those threads.
  * 
- * STAGE 4 implements this filter using the hand-optimized assembly function 
- * `int32_dot()` from `int32_dot.S`.
+ * This function is implemented in stage9.xc so as to make use of the convenient
+ * `par {}` syntax available in the XC language.
  */
 q1_31 filter_sample(
-    const int32_t sample_history[TAP_COUNT])
-{
-  // Compute the 64-bit inner product between the sample history and the filter
-  // coefficients.
-  int64_t acc = int32_dot(&sample_history[0], &filter_coef[0], TAP_COUNT);
-
-  // Apply a right-shift, dropping the bit-depth back down to 32 bits.
-  return ashr64(acc, acc_shr);
-}
+    const int32_t sample_history[TAP_COUNT],
+    const exponent_t history_exp,
+    const headroom_t history_hr);
 
 /**
  * Apply the filter to a frame with `FRAME_OVERLAP` new input samples, producing
@@ -99,10 +25,17 @@ q1_31 filter_sample(
  * `history_in[]` contains the most recent `FRAME_SIZE` samples with the newest
  * samples first (reverse time order). The first `FRAME_OVERLAP` samples of 
  * `history_in[]` are new.
+ * 
+ * `history_in_exp` is the block floating-point exponent associated with the
+ * samples in `history_in[]`.
+ * 
+ * `history_in_hr` is the headroom of the `history_in[]` vector.
  */
 void filter_frame(
     q1_31 frame_out[FRAME_OVERLAP],
-    const int32_t history_in[FRAME_SIZE])
+    const int32_t history_in[FRAME_SIZE],
+    const exponent_t history_in_exp,
+    const headroom_t history_in_hr)
 {
   // Compute FRAME_OVERLAP output samples.
   // Each output sample will use a TAP_COUNT-sample window of the input
@@ -111,7 +44,9 @@ void filter_frame(
   // takes to process.
   for(int s = 0; s < FRAME_OVERLAP; s++){
     timer_start();
-    frame_out[s] = filter_sample(&history_in[FRAME_OVERLAP-s-1]);
+    frame_out[s] = filter_sample(&history_in[FRAME_OVERLAP-s-1], 
+                                  history_in_exp, 
+                                  history_in_hr);
     timer_stop();
   }
 }
@@ -130,6 +65,10 @@ void filter_thread(
 {
   // Buffer used for storing input sample history.
   int32_t frame_history[FRAME_SIZE] = {0};
+  // Exponent associated with frame_history[]
+  exponent_t frame_history_exp;
+  // Headroom associated with frame_history[]
+  headroom_t frame_history_hr;
 
   // Buffer used to hold output samples.
   q1_31 frame_output[FRAME_OVERLAP] = {0};
@@ -145,13 +84,19 @@ void filter_thread(
       frame_history[FRAME_OVERLAP-k-1] = sample_in;
     }
 
+    // For now, the exponent associated with each new input frame is -31.
+    frame_history_exp = -31;
+
+    // Compute headroom of input frame
+    frame_history_hr = vect_s32_headroom(&frame_history[0], FRAME_SIZE);
+
     // Apply the filter to the new frame of audio, producing FRAME_OVERLAP 
     // output samples in frame_output[].
-    filter_frame(frame_output, frame_history);
+    filter_frame(frame_output, frame_history, 
+                 frame_history_exp, frame_history_hr);
 
     // Send FRAME_OVERLAP new output samples at the end of each frame.
     for(int k = 0; k < FRAME_OVERLAP; k++){
-      // Put PCM sample in output channel
       chan_out_word(c_pcm_out, frame_output[k]);
     }
 
@@ -161,3 +106,4 @@ void filter_thread(
             TAP_COUNT * sizeof(int32_t));
   }
 }
+

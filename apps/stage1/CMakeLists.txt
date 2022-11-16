@@ -1,50 +1,63 @@
 
 set( STAGE_NUMBER   1)
 
-# Application Name
-set( APP_NAME   "stage${STAGE_NUMBER}" )
-
 ## If XCORE_TARGET hasn't been specified, default to XCORE-AI-EXPLORER
 if( NOT DEFINED XCORE_TARGET )
   set( XCORE_TARGET XCORE-AI-EXPLORER )
 endif()
 
-add_executable( ${APP_NAME} )
+set(PARTS A B C)
 
-target_sources( ${APP_NAME}
-    PRIVATE
-      ../common/main.xc
-      ${APP_NAME}.c
-      filter_coef.c
-)
+foreach(PART ${PARTS})
+  
+  # Application Name
+  set( APP_NAME   "stage${STAGE_NUMBER}${PART}" )
 
-target_link_libraries( ${APP_NAME}
-    app_common
-    xscope_fileio
-)
+  add_executable( ${APP_NAME} )
 
-target_compile_options( ${APP_NAME}
-    PRIVATE
-      -Os -g -fxscope 
-      -target=${XCORE_TARGET}
-      ${XSCOPE_CONFIG}
-)
+  target_sources( ${APP_NAME}
+      PRIVATE
+        ../common/main.xc
+        stage${STAGE_NUMBER}.c
+        part_${PART}.c
+  )
 
-target_compile_definitions( ${APP_NAME}
-    PRIVATE
-      TEST_WAV_XSCOPE=1
-      STAGE_NUMBER=${STAGE_NUMBER}      
-)
+  target_link_libraries( ${APP_NAME}
+      app_common
+      xscope_fileio
+  )
 
-target_link_options( ${APP_NAME}
-    PRIVATE
-      ${XSCOPE_CONFIG}
-      -target=${XCORE_TARGET}
-      -report 
-      -fxscope
-)
+  target_compile_options( ${APP_NAME}
+      PRIVATE
+        -Os -g -fxscope 
+        -target=${XCORE_TARGET}
+        ${XSCOPE_CONFIG}
+  )
 
-install(TARGETS ${APP_NAME} 
-        DESTINATION ${WORKSPACE_PATH}/bin )
+  target_compile_definitions( ${APP_NAME}
+      PRIVATE
+        TEST_WAV_XSCOPE=1
+        STAGE_NUMBER=${STAGE_NUMBER}
+        PART_${PART}
+        STAGE_NAME="${APP_NAME}"
+  )
+
+  target_link_options( ${APP_NAME}
+      PRIVATE
+        ${XSCOPE_CONFIG}
+        -target=${XCORE_TARGET}
+        -report 
+        -fxscope
+  )
+
+  install(TARGETS ${APP_NAME} 
+          DESTINATION ${WORKSPACE_PATH}/bin )
+
+endforeach()
+
+
+target_sources( stage1A PRIVATE ../common/filters/box_filter_double.c )
+target_sources( stage1B PRIVATE ../common/filters/box_filter_float.c )
+target_sources( stage1C PRIVATE ../common/filters/box_filter_float.c )
 
 

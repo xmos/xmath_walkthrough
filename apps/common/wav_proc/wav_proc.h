@@ -16,7 +16,7 @@ extern "C" {
       chanend c_pcm_out, 
       chanend c_pcm_in, 
       chanend c_timing,
-      unsigned stage_number,
+      const char* stage_name,
       const char* input_file_name, 
       const char* output_file_name);
 }
@@ -25,7 +25,7 @@ extern "C" {
       chanend_t c_pcm_out, 
       chanend_t c_pcm_in, 
       chanend_t c_timing,
-      unsigned stage_number,
+      const char* stage_name,
       const char* input_file_name, 
       const char* output_file_name);
 

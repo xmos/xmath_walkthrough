@@ -2,18 +2,81 @@
 #include "common.h"
 
 /**
+ * The box filter coefficient array.
+ */
+extern 
+const q2_30 filter_coef[TAP_COUNT];
+
+/**
+ * The exponent associatd with the filter coefficients.
+ * 
+ * The value represented by the k'th coefficient is 
+ * `ldexp(filter_coef[k], coef_exp)`.
+ */
+const exponent_t coef_exp = -30;
+
+/**
+ * The exponent associated with the output signal.
+ * 
+ * This exponent implies 32-bit PCM samples represent a value in the range
+ * `[-1.0, 1.0)`.
+ */
+const exponent_t output_exp = -31;
+
+
+/**
  * Apply the filter to produce a single output sample.
  * 
- * In STAGE 9 this function will spawn multiple threads and compute the result
- * in parallel across those threads.
+ * `sample_history[]` contains the `TAP_COUNT` most-recent input samples, with
+ * the newest samples first (reverse time order).
  * 
- * This function is implemented in stage9.xc so as to make use of the convenient
- * `par {}` syntax available in the XC language.
+ * `history_exp` is the exponent associated with the samples in 
+ * `sample_history[]`.
+ * 
+ * `history_hr` is the headroom present in `sample_history[]`.
+ * 
+ * STAGE 7 implements this filter using lib_xcore_math's low-level API. The
+ * function vect_s32_dot() is optimized assembly making use of the VPU. 
  */
 q1_31 filter_sample(
     const int32_t sample_history[TAP_COUNT],
     const exponent_t history_exp,
-    const headroom_t history_hr);
+    const headroom_t history_hr)
+{
+  // The accumulator into which partial results are added.
+  // This is a non-standard floating-point type with a 64-bit mantissa and
+  // an exponent.
+  float_s64_t a;
+
+  // The headroom of the filter_coef[] vector. Used by vect_s32_dot_prepare().
+  const headroom_t coef_hr = HR_S32(filter_coef[0]);
+
+  // vect_s32_dot_prepare() takes in the exponent and headroom of both input 
+  // vectors and the length of the vectors and gives us 3 things:
+  //  - The exponent that will be associated with the output of vect_s32_dot()
+  //  - The b_shr and c_shr shift parameters required by vect_s32_dot().
+  // vect_s32_dot_prepare() chooses these three values so as to maximize the
+  // precision of the result while avoiding overflows on the inputs or output.
+  right_shift_t b_shr, c_shr;
+  vect_s32_dot_prepare(&a.exp, &b_shr, &c_shr, 
+                        history_exp, coef_exp,
+                        history_hr, coef_hr, TAP_COUNT);
+
+  // Compute the inner product's mantissa using the shift parameters we were 
+  // given.
+  a.mant = vect_s32_dot(&sample_history[0], &filter_coef[0], TAP_COUNT, 
+                        b_shr, c_shr);
+
+  // Much of the time in block floating-point, we don't require values to use
+  // any particular exponent. However, because we must send 32-bit PCM samples
+  // back to the host, we must ensure that all output samples are associated
+  // with the same exponent. Otherwise the output will make no sense.
+  // Here we convert our custom 64-bit float value to a 32-bit fixed-point
+  // q1_31 value.
+  q1_31 sample_out = float_s64_to_fixed(a, output_exp);
+
+  return sample_out;
+}
 
 /**
  * Apply the filter to a frame with `FRAME_OVERLAP` new input samples, producing
@@ -106,4 +169,3 @@ void filter_thread(
             TAP_COUNT * sizeof(int32_t));
   }
 }
-
