@@ -240,14 +240,29 @@ void filter_thread(
 }
 ```
 
-Here, the most noticeable difference between **Stage 7**'s `filter_thread()` and
+Here, the most notable difference between **Stage 7**'s `filter_thread()` and
 **Stage 8**'s `filter_thread()` is that **Stage 8**'s starts by initializing the
 BFP vectors that are used.
 
 Generally speaking, all `bfp_s32_t` must be initialized prior to being used as
 an operand in an arithmetic operation. The most important two things initializing the BFP vector does are to attach its mantissa buffer and to set its length.
 
-Initialization of a `bfp_s32_t` (32-bit BFP vector) is done with a call to [`bfp_s32_init()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L17-L45).
+Initialization of a `bfp_s32_t` (32-bit BFP vector) is done with a call to [`bfp_s32_init()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L17-L45). The final parameter, `calc_hr` indicates 
+whether the headroom should be calculated during initialization. This is 
+unnecessary when the element buffer has not been filled with data.
+
+As in **Stage 7**, each time a new input frame is received `frame_history`'s
+headroom is recomputed, however in **Stage 8**
+[`bfp_s32_headroom()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L190-L218)
+is used instead. `bfp_s32_headroom()` is basically a thin wrapper for
+`vect_s32_headroom()` except that it also sets the `hr` field of the BFP vector.
+
+Finally, in **Stage 8** after the new output samples are computed,
+[`bfp_s32_use_exponent()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L134-L187)
+is used to force the BFP vector to use `output_exp` as its exponent. A call to
+`bfp_s32_use_exponent()` with a constant for its `exp` parameter is essentially
+a conversion to a fixed-point format. In this case, the fixed-point format is a
+constraint imposed by the application.
 
 ## Results
 
@@ -257,3 +272,4 @@ Initialization of a `bfp_s32_t` (32-bit BFP vector) is done with a call to [`bfp
 * [`bfp_s32_dot()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L498-L522)
 * [`bfp_s32_init()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L17-L45)
 * [`bfp_s32_headroom()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L190-L218)
+* [`bfp_s32_use_exponent()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L134-L187)
