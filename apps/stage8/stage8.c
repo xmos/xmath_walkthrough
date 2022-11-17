@@ -30,7 +30,7 @@ bfp_s32_t bfp_filter_coef;
  * samples needed to compute the current output.
  */
 int32_t filter_sample(
-    const bfp_s32_t* sample_history
+    const bfp_s32_t* sample_history,
     const exponent_t out_exp)
 {
   // Compute the dot product of sample_history[] and bfp_filter_coef[].
@@ -78,7 +78,7 @@ void filter_frame(
     // Slide the window down one index, towards newer samples
     sample_history.data = sample_history.data - 1;
     // Get next output sample
-    frame_out->data[s] = filter_sample(&sample_history);
+    frame_out->data[s] = filter_sample(&sample_history, frame_out->exp);
     timer_stop();
   }
 }

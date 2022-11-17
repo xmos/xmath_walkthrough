@@ -16,7 +16,7 @@ target_sources( ${APP_NAME}
       ../common/main.xc
       ${APP_NAME}.c
       ${APP_NAME}.xc
-      filter_coef.c
+      ../common/filters/filter_coef_q2_30.c
 )
 
 target_link_libraries( ${APP_NAME} 

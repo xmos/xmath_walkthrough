@@ -1,14 +1,14 @@
 
-[Prev](../stage4/index.md) | [Home](../intro.md) | [Next](../stage6/index.md)
+[Prev](stage4.md) | [Home](../intro.md) | [Next](stage6.md)
 
 # Stage 5
 
-Like [**Stage 4**](../stage4/index.md), **Stage 5** implements the FIR filter
+Like [**Stage 4**](stage4.md), **Stage 5** implements the FIR filter
 using fixed-point arithmetic. 
 
 In **Stage 4**, we called a function named `int32_dot()` to perform the inner
 product for us. While `int32_dot()` was much faster than the compiler-generated
-inner product we wrote in C in [**Stage 3**](../stage3/index.md), `int32_dot()`
+inner product we wrote in C in [**Stage 3**](stage3.md), `int32_dot()`
 still only uses the xcore device's scalar arithmetic unit.
 
 **Stage 5** replaces `int32_dot()` with a call to

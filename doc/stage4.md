@@ -1,9 +1,9 @@
 
-[Prev](../stage3/index.md) | [Home](../intro.md) | [Next](../stage5/index.md)
+[Prev](stage3.md) | [Home](../intro.md) | [Next](stage5.md)
 
 # Stage 4
 
-Like [**Stage 3**](../stage3/index.md), **Stage 4** implements the FIR filter
+Like [**Stage 3**](stage3.md), **Stage 4** implements the FIR filter
 using fixed-point arithmetic. 
 
 In **Stage 3** we implemented the fixed-point arithmetic directly in plain C. As
@@ -15,7 +15,7 @@ One reason is that the C compiler will not target the VPU when compiling code. A
 
 In **Stage 4**, instead of implementing the logic in a plain C loop, we will use
 a dual-issue function written in assembly to compute the inner product for us.
-That function, `int32_dot()`, will not use the VPU (we'll use the VPU in [**Stage 5**](../stage5/index.md)), but is meant to demonstrate the improved performance we get just from using a dual-issue function written directly in assembly.
+That function, `int32_dot()`, will not use the VPU (we'll use the VPU in [**Stage 5**](stage5.md)), but is meant to demonstrate the improved performance we get just from using a dual-issue function written directly in assembly.
 
 ## Introduction
 

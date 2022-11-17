@@ -1,7 +1,7 @@
 
-[Prev](../stage10/index.md) | [Home](../intro.md) | [Next](../stage12/index.md)
+[Prev](stage11.md) | [Home](../intro.md) | [Next](../intro.md)
 
-# Stage 11
+# Stage 12
 
 ## Introduction
 

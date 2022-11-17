@@ -15,10 +15,6 @@
  * When called, `sample_buffer[]` contains the new input samples with the oldest
  * samples first (forward time order). Then `sample_buffer[]` is used to return
  * the output samples, also in forward time order.
- * 
- * STAGE 11 uses one of lib_xcore_math's FIR filter conversion scripts to
- * generate code for a named filter. In this case the filter is called
- * "userFilter".
  */
 void filter_frame(
     int32_t sample_buffer[FRAME_OVERLAP])
@@ -39,10 +35,6 @@ void filter_frame(
  * `c_pcm_in` is the channel from which PCM input samples are received.
  * 
  * `c_pcm_out` is the channel to which PCM output samples are sent.
- * 
- * STAGE 11 uses one of lib_xcore_math's FIR filter conversion scripts to
- * generate code for a filter named `userFilter`. The API functions available
- * for `userFilter` are specified in `userFilter.h`.
  */
 void filter_thread(
     chanend_t c_pcm_in, 

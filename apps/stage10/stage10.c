@@ -9,9 +9,6 @@ const q2_30 filter_coef[TAP_COUNT];
 
 /**
  * The exponent associatd with the filter coefficients.
- * 
- * The value represented by the k'th coefficient is 
- * `ldexp(filter_coef[k], coef_exp)`.
  */
 const exponent_t coef_exp = -30;
 
@@ -34,10 +31,6 @@ const right_shift_t filter_shr = -(coef_exp + 30);
  * When called, `sample_buffer[]` contains the new input samples with the oldest
  * samples first (forward time order). Then `sample_buffer[]` is used to return
  * the output samples, also in forward time order.
- * 
- * STAGE 10 uses lib_xcore_math's FIR filter API to compute the filtered 
- * samples. `filter` contains its own history of input samples, and so the 
- * sample history need not be managed by the user.
  */
 void filter_frame(
     filter_fir_s32_t* filter,
@@ -61,11 +54,6 @@ void filter_frame(
  * `c_pcm_in` is the channel from which PCM input samples are received.
  * 
  * `c_pcm_out` is the channel to which PCM output samples are sent.
- * 
- * STAGE 10 functions a bit differently than those in previous stages.
- * The lib_xcore_math filter_fir_s32_t object will manage the state of the FIR
- * filter, so there's no need to manage the history here. We will still read in
- * a whole frame overlap of samples before computing a result.
  */
 void filter_thread(
     chanend_t c_pcm_in, 

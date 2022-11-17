@@ -1,15 +1,15 @@
 
-[Prev](../stage6/index.md) | [Home](../intro.md) | [Next](../stage8/index.md)
+[Prev](stage6.md) | [Home](../intro.md) | [Next](stage8.md)
 
 # Stage 7
 
-Like [**Stage 6**](../stage6/index.md), **Stage 7** implements the FIR filter 
+Like [**Stage 6**](stage6.md), **Stage 7** implements the FIR filter 
 using block floating-point arithmetic.
 
 In **Stage 6** we implemented the block floating-point FIR filter using plain C.
 We had to manage exponents and headroom ourselves, as well as the logic for
 computing the inner product, which was similar to [**Stage
-3**](../stage3/index.md).
+3**](stage3.md).
 
 In **Stage 7** we will replace our C code which calculates and manages headroom
 and exponents with calls to functions from
@@ -17,7 +17,7 @@ and exponents with calls to functions from
 API to do some of this work for us. We also replace our `for` loop where the
 inner product is computed with a call to
 [`vect_s32_dot()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32.h#L399-L480),
-which we encountered in [**Stage 5**](../stage5/index.md).
+which we encountered in [**Stage 5**](stage5.md).
 
 This will also mean using the VPU to do the bulk of the work, rather than the
 scalar unit.

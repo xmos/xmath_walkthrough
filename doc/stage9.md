@@ -1,5 +1,5 @@
 
-[Prev](../stage8/index.md) | [Home](../intro.md) | [Next](../stage10/index.md)
+[Prev](stage8.md) | [Home](../intro.md) | [Next](stage10.md)
 
 # Stage 9
 
@@ -10,8 +10,8 @@ threads available, and most of these threads have so far gone unused. In **Stage
 several threads to reduce latency.
 
 **Stage 9** will take a block floating-point approach similar to that of
-[**Stage 7**](../stage7/index.md). The reason this stage is modeled on **Stage
-7** instead of [**Stage 8**](../stage8/index.md) is because `lib_xcore_math`'s
+[**Stage 7**](stage7.md). The reason this stage is modeled on **Stage
+7** instead of [**Stage 8**](stage8.md) is because `lib_xcore_math`'s
 high-level BFP API will not play nicely with this sort of parallelism. For
 advanced usage like this, the lower level API is required.
 

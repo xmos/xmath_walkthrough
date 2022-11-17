@@ -1,5 +1,5 @@
 
-[Prev](../stage7/index.md) | [Home](../intro.md) | [Next](../stage9/index.md)
+[Prev](stage7.md) | [Home](../intro.md) | [Next](stage9.md)
 
 # Stage 8
 
@@ -7,7 +7,7 @@ In **Stage 8** we finally begin using `lib_xcore_math`'s block floating-point
 (BFP) API.
 
 Here we don't expect any particularly noticeable performance boost relative to
-[**Stage 7**](../stage7/index.md)'s implementation. At bottom, both stages
+[**Stage 7**](stage7.md)'s implementation. At bottom, both stages
 ultimately use the same function (`vect_s32_dot()`) to do the bulk of the work
 computing the filter output. Instead, in this stage we will see how using the
 `lib_xcore_math` BFP API can simplify our code by doing much of the book-keeping
@@ -16,7 +16,7 @@ for us.
 That being said, this is not the ideal application of BFP arithmetic,
 particularly because of our application's requirement for fixed-point output
 samples. We'll see a somewhat more intrinsically BFP implementation when we get
-to [**Stage 12**](../stage12/index.md).
+to [**Stage 12**](stage12.md).
 
 ## Introduction
 

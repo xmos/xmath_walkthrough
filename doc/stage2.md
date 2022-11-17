@@ -1,10 +1,10 @@
 
-[Prev](../stage1/index.md) | [Home](../intro.md) | [Next](../stage3/index.md)
+[Prev](stage1.md) | [Home](../intro.md) | [Next](stage3.md)
 
 
 # Stage 2
 
-Like [**Stage 1**](../stage1/index.md), **Stage 2** implements the FIR filter
+Like [**Stage 1**](stage1.md), **Stage 2** implements the FIR filter
 using single-precision floating-point arithmetic. Instead of implementing the
 inner product directly with a plain C loop, however, **Stage 2** makes a call to
 a library function,

@@ -1,24 +1,32 @@
 
-[Prev](../stage9/index.md) | [Home](../intro.md) | [Next](../stage11/index.md)
+[Prev](stage9.md) | [Home](../intro.md) | [Next](stage11.md)
 
 # Stage 10
 
 **Stage 10** takes a very different approach than previous stages. **Stage 10**
-uses the FIR filter API [^1] provided by `lib_xcore_math`[^2]. In this example
-the FIR filter will be represented by a `filter_fir_s32_t`[^3] object. The FIR
-filter APIs are highly optimized implementations of 16- and 32-bit FIR filters
-and 32-bit biquad filters.
+uses the digital filter API [^1] provided by `lib_xcore_math`[^2]. In this
+example the FIR filter will be represented by a `filter_fir_s32_t`[^3] object.
+The digital filter APIs are highly optimized implementations of 16- and 32-bit
+FIR filters and 32-bit biquad filters.
 
 ## Introduction
 
+```
+TODO
+```
+
 ## Background
+
+```
+TODO
+```
 
 ## Code Changes
 
 The implementation for **Stage 10** is divided between `filter_thread()` and 
 `filter_frame()`.
 
-From `stage10.c`:
+From [`stage10.c`](stage10.c):
 ```c
 void filter_thread(
     chanend_t c_pcm_in, 
@@ -56,7 +64,7 @@ initialized with a call to `fir_filter_s32_init()`[^4]. The primary job of
 `fir_filter_s32_init()` is to tie the filter to a user-provided state buffer and
 to the user-provided coefficient array.
 
-From `stage10.c`:
+From [`stage10.c`](stage10.c):
 ```c
 void filter_frame(
     filter_fir_s32_t* filter,
@@ -88,9 +96,11 @@ output sample.
 
 ## Results
 
-## References
+```
+TODO
+```
 
-[^1]: [FIR Filter API](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/filter.h)
+[^1]: [Digital filter API](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/filter.h)
 [^2]: [`lib_xcore_math`](https://github.com/xmos/lib_xcore_math)
 [^3]: [`filter_fir_s32_t`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/filter.h#L19-L275)
 [^4]: [`filter_fir_s32_init()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/filter.h#L278-L307)
