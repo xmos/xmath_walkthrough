@@ -25,33 +25,33 @@ extern "C" {
 #endif
 
 int main(){
-    chan xscope_chan;
-    chan c_tile0_to_tile1;
-    chan c_tile1_to_tile0;
-    chan c_timing;
+  chan xscope_chan;
+  chan c_tile0_to_tile1;
+  chan c_tile1_to_tile0;
+  chan c_timing;
 
-    par {
-        xscope_host_data(xscope_chan);
-        on tile[0]: 
-        {
-          xscope_io_init(xscope_chan);
+  par {
+    xscope_host_data(xscope_chan);
+    on tile[0]: 
+    {
+      xscope_io_init(xscope_chan);
 
-          printf("Running Application: stage%u\n", STAGE_NUMBER);
+      printf("Running Application: stage%u\n", STAGE_NUMBER);
 
-          char str_buff[100];
-          sprintf(str_buff, OUTPUT_WAV_FMT, STAGE_NUMBER);
+      char str_buff[100];
+      sprintf(str_buff, OUTPUT_WAV_FMT, STAGE_NUMBER);
 
-          wav_io_thread(c_tile0_to_tile1, 
-                        c_tile1_to_tile0, 
-                        c_timing, 
-                        STAGE_NUMBER,
-                        INPUT_WAV, 
-                        str_buff);
-          _Exit(0);
-        }
-
-        on tile[1]: timer_report_task(c_timing);
-        on tile[1]: filter_thread(c_tile0_to_tile1, c_tile1_to_tile0);
+      wav_io_thread(c_tile0_to_tile1, 
+                    c_tile1_to_tile0, 
+                    c_timing, 
+                    STAGE_NUMBER,
+                    INPUT_WAV, 
+                    str_buff);
+      _Exit(0);
     }
-    return 0;
+
+    on tile[1]: timer_report_task(c_timing);
+    on tile[1]: filter_thread(c_tile0_to_tile1, c_tile1_to_tile0);
+  }
+  return 0;
 }

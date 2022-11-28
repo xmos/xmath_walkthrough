@@ -35,18 +35,18 @@ void filter_thread(
   int32_t filter_state[TAP_COUNT] = {0};
   filter_fir_s32_t fir_filter;
   
-  int32_t sample_buffer[FRAME_OVERLAP] = {0};
+  int32_t sample_buffer[FRAME_SIZE] = {0};
 
   filter_fir_s32_init(&fir_filter, &filter_state[0], 
                       TAP_COUNT, &filter_coef[0], filter_shr);
 
   while(1) {
-    for(int k = 0; k < FRAME_OVERLAP; k++)
+    for(int k = 0; k < FRAME_SIZE; k++)
       sample_buffer[k] = (int32_t) chan_in_word(c_pcm_in);
     
     filter_frame(&fir_filter, sample_buffer);
 
-    for(int k = 0; k < FRAME_OVERLAP; k++){
+    for(int k = 0; k < FRAME_SIZE; k++){
       chan_out_word(c_pcm_out, sample_buffer[k]);
     }
   }
@@ -54,7 +54,7 @@ void filter_thread(
 ```
 
 `filter_thread()` looks much like that in prior stages. Notably, the
-`frame_history` buffer has been removed. In its place are `filter_state` and
+`sample_history` buffer has been removed. In its place are `filter_state` and
 `fir_filter`. `fir_filter` is the `filter_fir_s32_t` object which represents our
 FIR filter. `filter_state` is a buffer required by `fir_filter` to manage the
 filter's state.
@@ -68,9 +68,9 @@ From [`stage10.c`](stage10.c):
 ```c
 void filter_frame(
     filter_fir_s32_t* filter,
-    int32_t sample_buffer[FRAME_OVERLAP])
+    int32_t sample_buffer[FRAME_SIZE])
 {
-  for(int s = 0; s < FRAME_OVERLAP; s++){
+  for(int s = 0; s < FRAME_SIZE; s++){
     timer_start();
     sample_buffer[s] = filter_fir_s32(filter, sample_buffer[s]);
     timer_stop();

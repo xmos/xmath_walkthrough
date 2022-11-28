@@ -102,14 +102,14 @@ fixed-point format, **Stage 8**'s `filter_sample()` still has to convert the
 From `stage7.c`:
 ```c
 void filter_frame(
-    q1_31 frame_out[FRAME_OVERLAP],
-    const int32_t history_in[FRAME_SIZE],
+    q1_31 frame_out[FRAME_SIZE],
+    const int32_t history_in[HISTORY_SIZE],
     const exponent_t history_in_exp,
     const headroom_t history_in_hr)
 {
-  for(int s = 0; s < FRAME_OVERLAP; s++){
+  for(int s = 0; s < FRAME_SIZE; s++){
     timer_start();
-    frame_out[s] = filter_sample(&history_in[FRAME_OVERLAP-s-1], 
+    frame_out[s] = filter_sample(&history_in[FRAME_SIZE-s-1], 
                                   history_in_exp, 
                                   history_in_hr);
     timer_stop();
@@ -126,12 +126,12 @@ void filter_frame(
   frame_out->exp = output_exp+2;
 
   bfp_s32_t sample_history;
-  bfp_s32_init(&sample_history, &history_in->data[FRAME_OVERLAP],
+  bfp_s32_init(&sample_history, &history_in->data[FRAME_SIZE],
                 history_in->exp, TAP_COUNT, 0);
 
   sample_history.hr = history_in->hr;
 
-  for(int s = 0; s < FRAME_OVERLAP; s++){
+  for(int s = 0; s < FRAME_SIZE; s++){
     timer_start();
     sample_history.data = sample_history.data - 1;
     frame_out->data[s] = filter_sample(&sample_history);
@@ -152,7 +152,7 @@ exponents for us. However, `bfp_s32_dot()` is already doing that work, for each 
 Next, and more interestingly, in **Stage 8**'s `filter_frame()` we create a new
 `bfp_s32_t` object, `sample_history`, which points to the same buffer as
 `history_in`. This is because we can only compute the inner product of two
-vectors if they have the same number of elements. `bfp_filter_coef` has length `TAP_COUNT` (1024), whereas `history_in` has length `FRAME_SIZE` (1280).
+vectors if they have the same number of elements. `bfp_filter_coef` has length `TAP_COUNT` (1024), whereas `history_in` has length `HISTORY_SIZE` (1280).
 
 To 'trick' `bfp_s32_dot()` into computing the inner product for us, we use
 `sample_history` as a `TAP_COUNT`-element window into `history_in`. For each
@@ -173,27 +173,27 @@ void filter_thread(
     chanend_t c_pcm_in, 
     chanend_t c_pcm_out)
 {
-  int32_t frame_history[FRAME_SIZE] = {0};
-  exponent_t frame_history_exp;
-  headroom_t frame_history_hr;
-  q1_31 frame_output[FRAME_OVERLAP] = {0};
+  int32_t sample_history[HISTORY_SIZE] = {0};
+  exponent_t sample_history_exp;
+  headroom_t sample_history_hr;
+  q1_31 frame_output[FRAME_SIZE] = {0};
 
   while(1) {
-    for(int k = 0; k < FRAME_OVERLAP; k++){
+    for(int k = 0; k < FRAME_SIZE; k++){
       const int32_t sample_in = (int32_t) chan_in_word(c_pcm_in);
-      frame_history[FRAME_OVERLAP-k-1] = sample_in;
+      sample_history[FRAME_SIZE-k-1] = sample_in;
     }
 
-    frame_history_exp = -31;
-    frame_history_hr = vect_s32_headroom(&frame_history[0], FRAME_SIZE);
+    sample_history_exp = -31;
+    sample_history_hr = vect_s32_headroom(&sample_history[0], HISTORY_SIZE);
 
-    filter_frame(frame_output, frame_history, 
-                 frame_history_exp, frame_history_hr);
+    filter_frame(frame_output, sample_history, 
+                 sample_history_exp, sample_history_hr);
 
-    for(int k = 0; k < FRAME_OVERLAP; k++)
+    for(int k = 0; k < FRAME_SIZE; k++)
       chan_out_word(c_pcm_out, frame_output[k]);
     
-    memmove(&frame_history[FRAME_OVERLAP], &frame_history[0], 
+    memmove(&sample_history[FRAME_SIZE], &sample_history[0], 
             TAP_COUNT * sizeof(int32_t));
   }
 }
@@ -208,33 +208,33 @@ void filter_thread(
   bfp_s32_init(&bfp_filter_coef, (int32_t*) &filter_coef[0], 
                coef_exp, TAP_COUNT, 1);
 
-  int32_t frame_history_buff[FRAME_SIZE] = {0};
-  bfp_s32_t frame_history;
-  bfp_s32_init(&frame_history, &frame_history_buff[0], -31, FRAME_SIZE, 0);
-  bfp_s32_set(&frame_history, 0, -31);
+  int32_t sample_history_buff[HISTORY_SIZE] = {0};
+  bfp_s32_t sample_history;
+  bfp_s32_init(&sample_history, &sample_history_buff[0], -31, HISTORY_SIZE, 0);
+  bfp_s32_set(&sample_history, 0, -31);
 
-  int32_t frame_output_buff[FRAME_OVERLAP] = {0};
+  int32_t frame_output_buff[FRAME_SIZE] = {0};
   bfp_s32_t frame_output;
-  bfp_s32_init(&frame_output, &frame_output_buff[0], 0, FRAME_OVERLAP, 0);
+  bfp_s32_init(&frame_output, &frame_output_buff[0], 0, FRAME_SIZE, 0);
 
   while(1) {
-    for(int k = 0; k < FRAME_OVERLAP; k++){
+    for(int k = 0; k < FRAME_SIZE; k++){
       const int32_t sample_in = (int32_t) chan_in_word(c_pcm_in);
-      frame_history.data[FRAME_OVERLAP-k-1] = sample_in;
+      sample_history.data[FRAME_SIZE-k-1] = sample_in;
     }
 
-    frame_history.exp = -31;
-    bfp_s32_headroom(&frame_history);
+    sample_history.exp = -31;
+    bfp_s32_headroom(&sample_history);
 
-    filter_frame(&frame_output, &frame_history);
+    filter_frame(&frame_output, &sample_history);
 
     bfp_s32_use_exponent(&frame_output, output_exp);
 
-    for(int k = 0; k < FRAME_OVERLAP; k++)
+    for(int k = 0; k < FRAME_SIZE; k++)
       chan_out_word(c_pcm_out, frame_output.data[k]);
     
 
-    memmove(&frame_history.data[FRAME_OVERLAP], &frame_history.data[0], 
+    memmove(&sample_history.data[FRAME_SIZE], &sample_history.data[0], 
             TAP_COUNT * sizeof(int32_t));
   }
 }
@@ -251,7 +251,7 @@ Initialization of a `bfp_s32_t` (32-bit BFP vector) is done with a call to [`bfp
 whether the headroom should be calculated during initialization. This is 
 unnecessary when the element buffer has not been filled with data.
 
-As in **Stage 7**, each time a new input frame is received `frame_history`'s
+As in **Stage 7**, each time a new input frame is received `sample_history`'s
 headroom is recomputed, however in **Stage 8**
 [`bfp_s32_headroom()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L190-L218)
 is used instead. `bfp_s32_headroom()` is basically a thin wrapper for

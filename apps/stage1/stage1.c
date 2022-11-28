@@ -37,24 +37,24 @@ float filter_sample(
 }
 
 /**
- * Apply the filter to a frame with `FRAME_OVERLAP` new input samples, producing
+ * Apply the filter to a frame with `FRAME_SIZE` new input samples, producing
  * one output sample for each new sample.
  * 
  * Computed output samples are placed into `frame_out[]` with the oldest samples
  * first (forward time order).
  * 
- * `history_in[]` contains the most recent `FRAME_SIZE` samples with the newest
- * samples first (reverse time order). The first `FRAME_OVERLAP` samples of 
+ * `history_in[]` contains the most recent `HISTORY_SIZE` samples with the newest
+ * samples first (reverse time order). The first `FRAME_SIZE` samples of 
  * `history_in[]` are new.
  */
 void filter_frame(
-    float frame_out[FRAME_OVERLAP],
-    const float history_in[FRAME_SIZE])
+    float frame_out[FRAME_SIZE],
+    const float history_in[HISTORY_SIZE])
 {
-  // Compute FRAME_OVERLAP output samples.
-  for(int s = 0; s < FRAME_OVERLAP; s++){
+  // Compute FRAME_SIZE output samples.
+  for(int s = 0; s < FRAME_SIZE; s++){
     timer_start();
-    frame_out[s] = filter_sample(&history_in[FRAME_OVERLAP-s-1]);
+    frame_out[s] = filter_sample(&history_in[FRAME_SIZE-s-1]);
     timer_stop();
   }
 }
@@ -72,30 +72,30 @@ void filter_thread(
     chanend_t c_pcm_out)
 {
   // Buffer used for storing input sample history.
-  float frame_history[FRAME_SIZE] = {0};
+  float sample_history[HISTORY_SIZE] = {0};
 
   // Buffer used to hold output samples.
-  float frame_output[FRAME_OVERLAP] = {0};
+  float frame_output[FRAME_SIZE] = {0};
 
   // Loop forever
   while(1) {
-    // Receive FRAME_OVERLAP new input samples at the beginning of each frame.
-    for(int k = 0; k < FRAME_OVERLAP; k++){
+    // Receive FRAME_SIZE new input samples at the beginning of each frame.
+    for(int k = 0; k < FRAME_SIZE; k++){
       // Read PCM sample from channel
       const int32_t sample_in = (int32_t) chan_in_word(c_pcm_in);
       // Convert PCM sample to floating-point
       const float samp_f = ldexpf(sample_in, input_exp);
       // Place at beginning of history buffer in reverse order (to match the
       // order of filter coefficients).
-      frame_history[FRAME_OVERLAP-k-1] = samp_f;
+      sample_history[FRAME_SIZE-k-1] = samp_f;
     }
 
-    // Apply the filter to the new frame of audio, producing FRAME_OVERLAP 
+    // Apply the filter to the new frame of audio, producing FRAME_SIZE 
     // output samples in frame_output[].
-    filter_frame(frame_output, frame_history);
+    filter_frame(frame_output, sample_history);
 
-    // Send FRAME_OVERLAP new output samples at the end of each frame.
-    for(int k = 0; k < FRAME_OVERLAP; k++){
+    // Send FRAME_SIZE new output samples at the end of each frame.
+    for(int k = 0; k < FRAME_SIZE; k++){
       // Get float sample from frame output buffer (in forward order)
       const float samp_f = frame_output[k];
       // Convert float sample back to PCM using the output exponent.
@@ -104,9 +104,9 @@ void filter_thread(
       chan_out_word(c_pcm_out, sample_out);
     }
 
-    // Finally, shift the frame_history[] buffer up FRAME_OVERLAP samples.
+    // Finally, shift the sample_history[] buffer up FRAME_SIZE samples.
     // This is required to maintain ordering of the sample history.
-    memmove(&frame_history[FRAME_OVERLAP], &frame_history[0], 
+    memmove(&sample_history[FRAME_SIZE], &sample_history[0], 
             TAP_COUNT * sizeof(float));
   }
 }

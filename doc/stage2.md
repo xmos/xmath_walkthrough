@@ -15,10 +15,14 @@ Rather than relying on the compiler to produce fast floating-point logic,
 `vect_f32_dot()` was hand-written in optimized XS3 assembly to go as quickly as
 possible.
 
+Here we will see another significant performance boost.
+
 ## Introduction
 
 ## Background
 
+* Discuss dual-issue instructions
+* Avoiding any unnecessary floating-point error checking and similar
 
 ## Code Changes
 

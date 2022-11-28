@@ -22,7 +22,7 @@ const right_shift_t filter_shr = -(coef_exp + 30);
 
 
 /**
- * Apply the filter to a frame with `FRAME_OVERLAP` new input samples, producing
+ * Apply the filter to a frame with `FRAME_SIZE` new input samples, producing
  * one output sample for each new sample.
  * 
  * `filter` is the `filter_fir_s32_t` object representing the filter 
@@ -34,9 +34,9 @@ const right_shift_t filter_shr = -(coef_exp + 30);
  */
 void filter_frame(
     filter_fir_s32_t* filter,
-    int32_t sample_buffer[FRAME_OVERLAP])
+    int32_t sample_buffer[FRAME_SIZE])
 {
-  for(int s = 0; s < FRAME_OVERLAP; s++){
+  for(int s = 0; s < FRAME_SIZE; s++){
     timer_start();
     // We can overwrite the data in sample_buffer[] because the filter object
     // will keep track of its own history. So, once we've supplied it with a
@@ -69,7 +69,7 @@ void filter_thread(
   filter_fir_s32_t fir_filter;
   
   // This buffer is where input/output samples will be placed.
-  int32_t sample_buffer[FRAME_OVERLAP] = {0};
+  int32_t sample_buffer[FRAME_SIZE] = {0};
 
   // The filter needs to be initialized before supplying it with samples.
   filter_fir_s32_init(&fir_filter, &filter_state[0], 
@@ -77,15 +77,15 @@ void filter_thread(
 
   // Loop forever
   while(1) {
-    // Receive FRAME_OVERLAP new input samples at the beginning of each frame.
-    for(int k = 0; k < FRAME_OVERLAP; k++)
+    // Receive FRAME_SIZE new input samples at the beginning of each frame.
+    for(int k = 0; k < FRAME_SIZE; k++)
       sample_buffer[k] = (int32_t) chan_in_word(c_pcm_in);
     
     // Process the samples
     filter_frame(&fir_filter, sample_buffer);
 
-    // Send FRAME_OVERLAP new output samples at the end of each frame.
-    for(int k = 0; k < FRAME_OVERLAP; k++){
+    // Send FRAME_SIZE new output samples at the end of each frame.
+    for(int k = 0; k < FRAME_SIZE; k++){
       chan_out_word(c_pcm_out, sample_buffer[k]);
     }
   }

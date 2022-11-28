@@ -89,9 +89,9 @@ takes a new input sample and returns a new output sample. The underlying
 
 ```c
 void filter_frame(
-    int32_t sample_buffer[FRAME_OVERLAP])
+    int32_t sample_buffer[FRAME_SIZE])
 {
-  for(int s = 0; s < FRAME_OVERLAP; s++){
+  for(int s = 0; s < FRAME_SIZE; s++){
     timer_start();
     sample_buffer[s] = userFilter(sample_buffer[s]);
     timer_stop();
@@ -109,19 +109,19 @@ void filter_thread(
     chanend_t c_pcm_in, 
     chanend_t c_pcm_out)
 {
-  int32_t sample_buffer[FRAME_OVERLAP] = {0};
+  int32_t sample_buffer[FRAME_SIZE] = {0};
 
   userFilter_init();
   
   assert(userFilter_exp_diff == 0);
 
   while(1) {
-    for(int k = 0; k < FRAME_OVERLAP; k++)
+    for(int k = 0; k < FRAME_SIZE; k++)
       sample_buffer[k] = (int32_t) chan_in_word(c_pcm_in);
     
     filter_frame(sample_buffer);
 
-    for(int k = 0; k < FRAME_OVERLAP; k++){
+    for(int k = 0; k < FRAME_SIZE; k++){
       chan_out_word(c_pcm_out, sample_buffer[k]);
     }
   }

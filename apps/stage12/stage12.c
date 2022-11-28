@@ -2,21 +2,21 @@
 #include "common.h"
 
 /**
- * The number of FRAME_OVERLAPs that fit into FRAME_SIZE.
+ * The number of FRAME_SIZEs that fit into HISTORY_SIZE.
  * 
  * The filter coefficients and input samples will be split into this many BFP
- * vectors, allowing each new set of FRAME_OVERLAP samples received by this
+ * vectors, allowing each new set of FRAME_SIZE samples received by this
  * thread to use a different BFP exponent.
  */
-#define OVERLAP_COUNT   ((FRAME_SIZE) / (FRAME_OVERLAP))
+#define OVERLAP_COUNT   ((HISTORY_SIZE) / (FRAME_SIZE))
 
 /**
  * The filter coefficient array. Note that the coefficients for the 1024-tap
- * filter are padded on both sides by `FRAME_OVERLAP` zeros. This will be 
+ * filter are padded on both sides by `FRAME_SIZE` zeros. This will be 
  * important for how this stage is implemented.
  */
 extern 
-const q4_28 filter_coef[TAP_COUNT+(2*(FRAME_OVERLAP))];
+const q4_28 filter_coef[TAP_COUNT+(2*(FRAME_SIZE))];
 
 /**
  * The exponent associatd with the filter coefficients.
@@ -47,13 +47,13 @@ const exponent_t output_exp = input_exp;
  * Apply the filter to produce a single output sample.
  * 
  * `filter_block[]` is an array of OVERLAP_COUNT BFP vectors, each containing
- * FRAME_OVERLAP elements. Each of these BFP vectors corresponds to a portion
+ * FRAME_SIZE elements. Each of these BFP vectors corresponds to a portion
  * of the filter_coef[] vector, but that portion will 'slide' along the 
  * filter_coef[] vector as each sample is processed.
  * 
  * `overlap_segment[]` is an array of OVERLAP_COUNT BFP vectors, each containing
- * FRAME_OVERLAP input samples. Each of these BFP vectors corresponds to one
- * new frame of FRAME_OVERLAP samples received from the input thread.
+ * FRAME_SIZE input samples. Each of these BFP vectors corresponds to one
+ * new frame of FRAME_SIZE samples received from the input thread.
  * 
  * STAGE 12 implements this filter by just adding together the inner products of 
  * the corresponding filter blocks and overlap segments.
@@ -86,17 +86,17 @@ float_s32_t filter_sample(
 // right place, we could then just get segment-wise inner products and then sum
 // them together. 
 // To do that, we needed to pad the filter coefficients with zeros on both ends,
-// since all FRAME_SIZE (= TAP_COUNT + FRAME_OVERLAP) samples of history will be
-// used. Padding by FRAME_OVERLAP on each side will do.
+// since all HISTORY_SIZE (= TAP_COUNT + FRAME_SIZE) samples of history will be
+// used. Padding by FRAME_SIZE on each side will do.
 
 /**
  * BFP vectors representing the filter coefficients. Each block corresponds to
- * FRAME_OVERLAP coefficients from `filter_coef[]`.
+ * FRAME_SIZE coefficients from `filter_coef[]`.
  */
 bfp_s32_t filter_blocks[OVERLAP_COUNT];
 
 /**
- * Apply the filter to a frame with `FRAME_OVERLAP` new input samples, producing
+ * Apply the filter to a frame with `FRAME_SIZE` new input samples, producing
  * one output sample for each new sample.
  * 
  * Computed output samples are placed into `output` with the oldest samples
@@ -112,13 +112,13 @@ void filter_frame(
 
   // Set each filter sub-vector to its initial position.
   for(int k = 0; k < OVERLAP_COUNT; k++){
-    filter_blocks[k].data = (int32_t*) &filter_coef[k*(FRAME_OVERLAP)+1];
+    filter_blocks[k].data = (int32_t*) &filter_coef[k*(FRAME_SIZE)+1];
   }
 
   // Set the output exponent for the output BFP vector
   output->exp = output_exp;
   
-  for(int s = 0; s < FRAME_OVERLAP; s++){
+  for(int s = 0; s < FRAME_SIZE; s++){
     timer_start();
 
     // Get the next output sample
@@ -157,17 +157,17 @@ bfp_s32_t overlap_segments[OVERLAP_COUNT];
  * 
  * `sample_buff[]` is used for both input and output samples.
  * 
- * Each new frame of audio received is converted into a `FRAME_OVERLAP`-length
+ * Each new frame of audio received is converted into a `FRAME_SIZE`-length
  * BFP vector and stored in `overlap_segments[]`, which are cycled as new frames
  * are received.
  */
 void filter_frame_wrap(
-    float sample_buff[FRAME_OVERLAP])
+    float sample_buff[FRAME_SIZE])
 {
   // Convert float vector to BFP vector and place in the first overlap segment
-  overlap_segments[0].exp = vect_f32_max_exponent(sample_buff, FRAME_OVERLAP);
+  overlap_segments[0].exp = vect_f32_max_exponent(sample_buff, FRAME_SIZE);
   vect_f32_to_vect_s32(&(overlap_segments[0].data[0]), &sample_buff[0], 
-                       FRAME_OVERLAP, overlap_segments[0].exp);
+                       FRAME_SIZE, overlap_segments[0].exp);
 
   // Compute BFP vector headroom
   bfp_s32_headroom(&overlap_segments[0]);
@@ -177,7 +177,7 @@ void filter_frame_wrap(
 
   // Convert back to floating-point
   vect_s32_to_vect_f32(&sample_buff[0], &result.data[0], 
-                       FRAME_OVERLAP, result.exp);
+                       FRAME_SIZE, result.exp);
 
   // Rotate the overlap segments up 1 (note that this doesn't actually move
   // the underlying samples, since the bfp_s32_t struct points to the sample
@@ -203,38 +203,38 @@ void filter_thread(
     chanend_t c_pcm_in, 
     chanend_t c_pcm_out)
 {
-  int32_t overlaps_buff[OVERLAP_COUNT][FRAME_OVERLAP] = {{0}};
+  int32_t overlaps_buff[OVERLAP_COUNT][FRAME_SIZE] = {{0}};
 
   // Initialize the overlap segments
   for(int k = 0; k < OVERLAP_COUNT; k++)
     bfp_s32_init(&overlap_segments[k], &overlaps_buff[k][0], 
-                 0, FRAME_OVERLAP, 1);
+                 0, FRAME_SIZE, 1);
 
   // Initialize the result vector
-  int32_t result_buff[FRAME_OVERLAP];
-  bfp_s32_init(&result, &result_buff[0], 0, FRAME_OVERLAP, 0);
+  int32_t result_buff[FRAME_SIZE];
+  bfp_s32_init(&result, &result_buff[0], 0, FRAME_SIZE, 0);
 
   // Initialize filter blocks (data pointer doesn't matter)
   for(int k = 0; k < OVERLAP_COUNT; k++){
-    bfp_s32_init(&filter_blocks[k], NULL, coef_exp, FRAME_OVERLAP, 0);
-    filter_blocks[k].hr = HR_S32(filter_coef[FRAME_OVERLAP]);
+    bfp_s32_init(&filter_blocks[k], NULL, coef_exp, FRAME_SIZE, 0);
+    filter_blocks[k].hr = HR_S32(filter_coef[FRAME_SIZE]);
   }
   
   // Buffer used for input/output samples
-  float sample_buff[FRAME_OVERLAP];
+  float sample_buff[FRAME_SIZE];
 
   while(1) {
-    for(int k = 0; k < FRAME_OVERLAP; k++){
+    for(int k = 0; k < FRAME_SIZE; k++){
       const int32_t sample_in = (int32_t) chan_in_word(c_pcm_in);
       const float sample_in_flt = ldexpf(sample_in, input_exp);
-      sample_buff[FRAME_OVERLAP-k-1] = sample_in_flt;
+      sample_buff[FRAME_SIZE-k-1] = sample_in_flt;
     }
 
     // Process the samples
     filter_frame_wrap(sample_buff);
 
     // Convert samples back to int32_t and send them to next thread.
-    for(int k = 0; k < FRAME_OVERLAP; k++){
+    for(int k = 0; k < FRAME_SIZE; k++){
       const float sample_out_flt = sample_buff[k];
       const int32_t sample_out = roundf(ldexpf(sample_out_flt, -output_exp));
       chan_out_word(c_pcm_out, sample_out);

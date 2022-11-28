@@ -40,9 +40,9 @@ macro:
 
 ```c
   // Compute headroom of input frame
-  frame_history_hr = 32;
-  for(int k = 0; k < FRAME_SIZE; k++)
-    frame_history_hr = MIN(frame_history_hr, HR_S32(frame_history[k]));
+  sample_history_hr = 32;
+  for(int k = 0; k < HISTORY_SIZE; k++)
+    sample_history_hr = MIN(sample_history_hr, HR_S32(sample_history[k]));
 ```
 
 In `stage7.c`, we're instead calling
@@ -50,7 +50,7 @@ In `stage7.c`, we're instead calling
 
 ```c
   // Compute headroom of input frame
-  frame_history_hr = vect_s32_headroom(&frame_history[0], FRAME_SIZE);
+  sample_history_hr = vect_s32_headroom(&sample_history[0], HISTORY_SIZE);
 ```
 
 Though not included in the timing performance measured by the apps, this new

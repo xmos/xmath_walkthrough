@@ -9,7 +9,7 @@
 
 
 /**
- * Apply the filter to a frame with `FRAME_OVERLAP` new input samples, producing
+ * Apply the filter to a frame with `FRAME_SIZE` new input samples, producing
  * one output sample for each new sample.
  * 
  * When called, `sample_buffer[]` contains the new input samples with the oldest
@@ -17,9 +17,9 @@
  * the output samples, also in forward time order.
  */
 void filter_frame(
-    int32_t sample_buffer[FRAME_OVERLAP])
+    int32_t sample_buffer[FRAME_SIZE])
 {
-  for(int s = 0; s < FRAME_OVERLAP; s++){
+  for(int s = 0; s < FRAME_SIZE; s++){
     timer_start();
     // userFilter() is the generated function to add a new input sample and get
     // back the filtered result.
@@ -41,7 +41,7 @@ void filter_thread(
     chanend_t c_pcm_out)
 {
   // This buffer is where input/output samples will be placed.
-  int32_t sample_buffer[FRAME_OVERLAP] = {0};
+  int32_t sample_buffer[FRAME_SIZE] = {0};
 
   // Initialize userFilter. userFilter allocates and manages its own buffers and
   // filter object, so no buffer needs to be supplied.
@@ -52,15 +52,15 @@ void filter_thread(
 
   // Loop forever
   while(1) {
-    // Receive FRAME_OVERLAP new input samples at the beginning of each frame.
-    for(int k = 0; k < FRAME_OVERLAP; k++)
+    // Receive FRAME_SIZE new input samples at the beginning of each frame.
+    for(int k = 0; k < FRAME_SIZE; k++)
       sample_buffer[k] = (int32_t) chan_in_word(c_pcm_in);
     
     // Process the samples
     filter_frame(sample_buffer);
 
-    // Send FRAME_OVERLAP new output samples at the end of each frame.
-    for(int k = 0; k < FRAME_OVERLAP; k++){
+    // Send FRAME_SIZE new output samples at the end of each frame.
+    for(int k = 0; k < FRAME_SIZE; k++){
       chan_out_word(c_pcm_out, sample_buffer[k]);
     }
   }

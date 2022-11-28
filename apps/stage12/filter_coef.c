@@ -19,9 +19,9 @@
  * 
  * Other than padding, coefficients are all identical, but formally the
  * coefficients are in ascending order.  e.g. b[0], b[1], b[2], etc
- * with b[0] at filter_coef[FRAME_OVERLAP].
+ * with b[0] at filter_coef[FRAME_SIZE].
  */
-const q4_28 filter_coef[TAP_COUNT+(2*(FRAME_OVERLAP))] = {
+const q4_28 filter_coef[TAP_COUNT+(2*(FRAME_SIZE))] = {
   0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, // -256
   0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 
@@ -74,5 +74,5 @@ const q4_28 filter_coef[TAP_COUNT+(2*(FRAME_OVERLAP))] = {
   0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 
   0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 
   0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 
-  0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, //TAP_COUNT + FRAME_OVERLAP
+  0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, //TAP_COUNT + FRAME_SIZE
 };

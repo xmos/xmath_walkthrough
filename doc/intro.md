@@ -3,16 +3,29 @@ Prev | Home | [Next](building.md)
 
 ## Introduction
 
-This repository is a hands-on tutorial for developers interested in writing efficient DSP or other compute-heavy logic on xcore devices.
+This repository is a hands-on tutorial for developers interested in writing
+efficient DSP or other compute-heavy logic on xcore devices.
+
+We focus on a particular use case: implementing a digital FIR filter. The filter
+will initially be implemented in a highly straight-forward but inefficient way,
+and then we will 
+
+* explore various approaches that can be taken to improve the implementation, 
+* see some of the APIs in the `lib_xcore_math` library which can be used to
+help, and
+* introduce and discuss some of the theoretical and conceptual elements
+encountered along the way.
 
 ## Tutorial Organization
 
-This tutorial is organized into 4 parts, each with several stages. All stages implement the same FIR filter, each using a different approach.
+This tutorial is organized into 4 parts, each with several stages. All stages
+implement the same FIR filter, each using a different approach.
 
 Each stage 
 
 * Explains our motivation for using that implementation
-* Introduces any new concepts or background required for understanding that stage's implementation
+* Introduces any new concepts or background required for understanding that
+  stage's implementation
 * Introduces any new `lib_xcore_math` library calls
 * Explains the code changes (usually from the previous stage) required for the
   new implementation
@@ -26,7 +39,8 @@ digital filter because the application developer need not worry (much) about the
 dynamic range of variables and need not manually manage the book-keeping of
 exponents and headroom.
 
-Ultimately floating-point arithmetic will not yield the most performant implementation, as the xcore device only has a scalar floating-point unit.
+Ultimately floating-point arithmetic will not yield the most performant
+implementation, as the xcore device only has a scalar floating-point unit.
 
 ### Part B -- Fixed-point
 

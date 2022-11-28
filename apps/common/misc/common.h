@@ -20,6 +20,6 @@
 
 
 #define TAP_COUNT     (1024)
-#define FRAME_OVERLAP (256)
-#define FRAME_SIZE    (TAP_COUNT + FRAME_OVERLAP)
+#define FRAME_SIZE    (256)
+#define HISTORY_SIZE  (TAP_COUNT + FRAME_SIZE)
 
