@@ -22,7 +22,7 @@ support) instead of double-precision arithmetic.
 ## Code Changes
 
 Comparing the code in `stage1.c` to the code from `stage0.c`, we see that the
-only difference is that all `double` values have been replaced with `float`
+only real difference is that all `double` values have been replaced with `float`
 values.
 
 Similarly, the **Stage 1** application includes `filter_coef_float.c` (rather

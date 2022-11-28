@@ -28,13 +28,13 @@ scalar unit.
 
 ## Code Changes
 
-### Headroom Calculation in `filter_thread()`
+### Headroom Calculation in `filter_task()`
 
 The first change from **Stage 6** to **Stage 7** we will look at is how the 
 headroom of the input audio frame is calculated.
 
 In `stage6.c`, we calculated the input headroom in a `for` loop in
-`filter_thread()` with a little help from the
+`filter_task()` with a little help from the
 [`HR_S32()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/util.h#L145-L154)
 macro:
 

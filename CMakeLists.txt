@@ -11,11 +11,4 @@ string(REPLACE "-MD" "-MMD" CMAKE_DEPFILE_FLAGS_C ${CMAKE_DEPFILE_FLAGS_C})
 set(WORKSPACE_PATH ${CMAKE_BINARY_DIR}/.. )
 
 add_subdirectory(lib_xcore_math)
-add_subdirectory(xscope_fileio)
-add_subdirectory(apps)
-add_subdirectory(script)
-
-install(
-  FILES "wav/input.wav"
-  DESTINATION ${WORKSPACE_PATH}/wav
-)
+add_subdirectory(src)

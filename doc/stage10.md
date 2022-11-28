@@ -23,12 +23,12 @@ TODO
 
 ## Code Changes
 
-The implementation for **Stage 10** is divided between `filter_thread()` and 
+The implementation for **Stage 10** is divided between `filter_task()` and 
 `filter_frame()`.
 
 From [`stage10.c`](stage10.c):
 ```c
-void filter_thread(
+void filter_task(
     chanend_t c_pcm_in, 
     chanend_t c_pcm_out)
 {
@@ -53,7 +53,7 @@ void filter_thread(
 }
 ```
 
-`filter_thread()` looks much like that in prior stages. Notably, the
+`filter_task()` looks much like that in prior stages. Notably, the
 `sample_history` buffer has been removed. In its place are `filter_state` and
 `fir_filter`. `fir_filter` is the `filter_fir_s32_t` object which represents our
 FIR filter. `filter_state` is a buffer required by `fir_filter` to manage the

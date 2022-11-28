@@ -65,76 +65,76 @@ for this.
 
 The [Software Organization](sw_organization.md) page discussed the broad
 structure of the firmware. This page will zoom in and take the point-of-view of
-the thread which actually does the filtering.
+the `filter_task` thread which actually does the filtering.
 
-The code specific to **Stage 0** is found in [`stage0.c`](TODO). There are three functions involved in the filtering thread and we'll take a look at each below.
+The code specific to **Stage 0** is found in [`stage0.c`](TODO). There are two
+main functions involved in the `filter_task` thread and we'll take a look at
+each in a moment.
 
-> Note: Throughout this tutorial, code presented to the reader will typically have any in-code comments stripped. This is done primarily for the sake of brevity.
+> Note: Throughout this tutorial, code presented to the reader will sometimes
+> have any in-code comments stripped. This is done primarily for the sake of
+> brevity.
 
-Before diving into **Stage 0**'s filter implementation, however, there are
-several common bits of code shared by all or most stages. These are found within
-`/xmath_walkthrough/apps/common/`.
+Before diving into **Stage 0**'s filter implementation, there are several common
+bits of code shared by all or most stages. These are found within the
+`/xmath_walkthrough/src/common/` directory.
 
 ### `main.xc`
 
 [`main.xc`](TODO) defines the firmware application's entry point. `main()` is
 defined in an XC file rather than a C file to make use of the XC language's
-simple syntax for allocating channel resources and for bootstrapping the threads
-that will be running on each tile.
+convenient syntax for allocating channel resources and for bootstrapping the
+threads that will be running on each tile.
 
 ```c
 int main(){
-  chan xscope_chan;
-  chan c_tile0_to_tile1;
-  chan c_tile1_to_tile0;
+  // Channel used for communicating audio data between tile[0] and tile[1].
+  chan c_audio_data;
+  // Channel used for reporting timing info from tile[1] after the signal has
+  // been processed.
   chan c_timing;
 
   par {
-    xscope_host_data(xscope_chan);
+    // One thread runs on tile[0]
     on tile[0]: 
     {
-      xscope_io_init(xscope_chan);
+      // Called so xscope will be used for prints instead of JTAG.
+      xscope_config_io(XSCOPE_IO_BASIC);
 
       printf("Running Application: stage%u\n", STAGE_NUMBER);
 
-      char str_buff[100];
-      sprintf(str_buff, OUTPUT_WAV_FMT, STAGE_NUMBER);
-
-      wav_io_thread(c_tile0_to_tile1, 
-                    c_tile1_to_tile0, 
-                    c_timing, 
-                    STAGE_NUMBER,
-                    INPUT_WAV, 
-                    str_buff);
+      // This is where the app will spend all its time.
+      wav_io_task(c_audio_data, 
+                  c_timing, 
+                  INPUT_WAV,    // These three macros are defined per-target
+                  OUTPUT_WAV,   // in the CMake project.
+                  OUTPUT_JSON);
+      
+      // Once wav_io_task() returns we are done.
       _Exit(0);
     }
 
+    // Two threads on tile[1].
+    // tiny task which just sits waiting to report timing info back to tile[0]
     on tile[1]: timer_report_task(c_timing);
-    on tile[1]: filter_thread(c_tile0_to_tile1, c_tile1_to_tile0);
+    // The thread which does the signal processing.
+    on tile[1]: filter_task(c_audio_data);
   }
   return 0;
 }
 ```
 
-Two threads are spawned on `tile[0]`. The first is `xscope_host_data()`, used by
-`xscope_fileio` for accessing the host's filesystem. Also on `tile[0]` is
-`wav_io_thread()`, which will be described shortly.
-
-> Note: Technically the entry point for the `wav` file processing thread is
-> right in `main.xc` (the first statement executed in the spawned thread is
-> `xscope_io_init(xscope_chan);`). However, the thread spends almost all its
-> time in the `wav_io_thread()` function, so for the sake of conceptual clarity
-> I refer to it as the `wav_io_thread()` thread.
+One thread is spawned on `tile[0]`, `wav_io_task()`, which handles all file IO
+and breaking the input and output signal up into frames of audio.
 
 On the second tile two more threads are spawned. The filter thread, with
-`filter_thread()` as an entry point, is where the actual filtering takes place.
-It communicates with the `wav_io_thread()` across tiles using two channel
-resources.
+`filter_task()` as an entry point, is where the actual filtering takes place. It
+communicates with `wav_io_task` across tiles using a channel resource.
 
 Also on `tile[1]` is `timer_report_task()`. This is a trivial thread which
 simply waits until the application is almost ready to terminate, and then
-reports some timing information (collected by `filter_thread()`) back to
-`wav_io_thread()` where the performance info can be written out to a text file.
+reports some timing information (collected by `filter_task`) back to
+`wav_io_task` where the performance info can be written out to a text file.
 
 ### `common.h`
 
@@ -154,9 +154,9 @@ additions necessary (arithmetically speaking) to compute the filter output. And
 it is also the minimum input sample history size needed to compute the filter
 output for a particular time step.
 
-Rather than `filter_thread()` receiving input samples one-by-one, it receives
-new input samples in frames. Each frame of input samples will contain
-`FRAME_SIZE` new input sample values.
+Rather than `filter_task` receiving input samples one-by-one, it receives new
+input samples in frames. Each frame of input samples will contain `FRAME_SIZE`
+new input sample values.
 
 Because the filter thread is receiving input samples in batches of `FRAME_SIZE`
 and sending output samples in batches of `FRAME_SIZE`, it also makes sense to
@@ -164,12 +164,12 @@ process them as a batch. Additionally, when processing a batch, it is more
 convenient and more efficient to store the sample history in a single linear
 buffer. That buffer must then be `HISTORY_SIZE` elements long.
 
-### `filter_thread()`
+### `filter_task()`
 
-This is the filtering thread's entry point. After initialization this function
-loops forever, receiving a frame of input audio, processing it to get output
-audio, and then transmitting it back to `tile[0]` to be written to the output
-`wav` file.
+This is the filtering thread's entry point in **Stage 0**. After initialization
+this function loops forever, receiving a frame of input audio, processing it to
+get output audio, and then transmitting it back to `tile[0]` to be written to
+the output `wav` file.
 
 > **Note**: In **Stage 0** to keep things 'clean' we would prefer to be
 > receiving `double`-valued samples directly over the channel from `tile[0]`.
@@ -177,7 +177,7 @@ audio, and then transmitting it back to `tile[0]` to be written to the output
 > in more complicated software, rather than less. So, in Part A of this tutorial
 > where we work with floating-point arithmetic, we're simply _pretending_ that
 > we are receiving the input frame as `double` values by converting each sample
-> as it comes in. Likewise, a similar conversion happens with output samples. 
+> as it comes in. Likewise, a similar conversion happens with output samples.
 > 
 > The actual input and output sample values going between tiles are all
 > fixed-point integer values -- just as they're found in the `wav` files. The
@@ -191,117 +191,151 @@ audio, and then transmitting it back to `tile[0]` to be written to the output
 
 From [`stage0.c`](TODO):
 ```c
-void filter_thread(
-    chanend_t c_pcm_in, 
-    chanend_t c_pcm_out)
+/**
+ * This is the thread entry point for the hardware thread which will actually 
+ * be applying the FIR filter.
+ * 
+ * `c_audio` is the channel over which PCM audio data is exchanged with tile[0].
+ */
+void filter_task(
+    chanend_t c_audio)
 {
+  // History of received input samples, stored in reverse-chronological order.
   double sample_history[HISTORY_SIZE] = {0};
 
+  // Buffer used to hold output samples before they're transferred to tile[0].
   double frame_output[FRAME_SIZE] = {0};
-```
 
-`sample_history[]` is the buffer which stores the previously received input
-samples. The samples in this buffer are stored in reverse chronological order,
-with the most recently received sample at `sample_history[0]`.
-
-`frame_output[]` is the buffer into to which computed output samples are placed before being sent back to the wav thread.
-
-```c
+  // Loop forever
   while(1) {
-    for(int k = 0; k < FRAME_SIZE; k++){
-      const int32_t sample_in = (int32_t) chan_in_word(c_pcm_in);
-      const double samp_f = ldexp(sample_in, input_exp);
-      sample_history[FRAME_SIZE-k-1] = samp_f;
+    // Read in a new frame. It is placed in reverse order at the beginning of
+    // sample_history[]
+    read_frame_as_double(&sample_history[0], c_audio, input_exp, FRAME_SIZE);
+    
+    // Compute FRAME_SIZE output samples.
+    for(int s = 0; s < FRAME_SIZE; s++){
+      timer_start();
+      frame_output[s] = filter_sample(&sample_history[FRAME_SIZE-s-1]);
+      timer_stop();
     }
-```
 
-This thread loops until the application is terminated (from `tile[0]`). In each
-iteration of the main loop, the first step is to receive `FRAME_SIZE` new input
-samples and place them into the sample history buffer (in reverse order).
+    // Send out the processed frame
+    send_frame_as_double(c_audio, &frame_output[0], output_exp, FRAME_SIZE);
 
-To pretend `double` samples are being received, as mentioned above, the input
-sample values are converted from their integer PCM values into `double`s using
-the input exponent `input_exp`.
-
-```c
-    filter_frame(frame_output, sample_history);
-```
-
-Call `filter_frame()` with the updated `sample_history[]`. `frame_output[]` is
-where output samples are to be placed.
-
-
-```c
-
-    for(int k = 0; k < FRAME_SIZE; k++){
-      const double samp_f = frame_output[k];
-      const q1_31 sample_out = round(ldexp(samp_f, -output_exp));
-      chan_out_word(c_pcm_out, sample_out);
-    }
-```
-
-For every frame of input audio sent from `tile[0]`, a frame of output audio must
-be sent to `tile[0]`. Note that trying to receive any more input samples before
-sending the output samples would result in a deadlock because `tile[0]` is
-currently blocking on a channel input from `c_pcm_out`.
-
-This converts the computed output samples from `double` back to PCM integers
-using `output_exp` and then sends them over `c_pcm_out`.
-
-```c
-
+    // Finally, shift the sample_history[] buffer up FRAME_SIZE samples.
+    // This is required to maintain ordering of the sample history.
     memmove(&sample_history[FRAME_SIZE], &sample_history[0], 
             TAP_COUNT * sizeof(double));
   }
 }
 ```
 
-Finally, so as to keep `sample_history[]` fully ordered, the first `TAP_COUNT`
-elements of `sample_history[]` are shifted to the end of the buffer, effectively
-discarding the `FRAME_SIZE` oldest input samples.
+`filter_task()` takes a channel end resource as a parameter. This is how it 
+communicates with `wav_io_task`.
 
+`sample_history[]` is the buffer which stores the previously received input
+samples. The samples in this buffer are stored in reverse chronological order,
+with the most recently received sample at `sample_history[0]`.
 
-### `filter_frame()`
+`frame_output[]` is the buffer into to which computed output samples are placed
+before being sent to `wav_io_task`.
 
-`filter_frame()` is responsible for computing all of the output sample values
-for the current audio frame.
+The `filter_task` thread loops until the application is terminated (via
+`tile[0]`). In each iteration of the its main loop, the first step is to receive
+`FRAME_SIZE` new input samples and place them into the sample history buffer (in
+reverse order).
 
-From [`stage0.c`](TODO):
+The [`read_frame_as_double()`](TODO) and [`send_frame_as_double()`](TODO)
+functions, both defined in [`misc_func.h`](TODO), are helper functions which
+transfer a frame's worth of samples from/to `wav_io_task`. Here is
+`read_frame_as_double()`'s implementation:
+
+From [`misc_func.h`](TODO):
 ```c
-void filter_frame(
-    double frame_out[FRAME_SIZE],
-    const double history_in[HISTORY_SIZE])
-{
-  for(int s = 0; s < FRAME_SIZE; s++){
-    timer_start();
-    frame_out[s] = filter_sample(&history_in[FRAME_SIZE-s-1]);
-    timer_stop();
+static inline 
+void read_frame_as_double(
+    double buff[],
+    const chanend_t c_audio,
+    const exponent_t input_exp,
+    const unsigned frame_size)
+{    
+  for(int k = 0; k < frame_size; k++){
+    // Read PCM sample from channel
+    const int32_t sample_in = (int32_t) chan_in_word(c_audio);
+    // Convert PCM sample to floating-point
+    const double samp_f = ldexp(sample_in, input_exp);
+    // Place at beginning of history buffer in reverse order (to match the
+    // order of filter coefficients).
+    buff[frame_size-k-1] = samp_f;
   }
 }
 ```
 
-The only thing worth noting here are the calls to `timer_start()` and
-`timer_stop()`. These are defined in [`timing.c`](TODO) and are how we are
-measuring the performance of our implementation. Each time `timer_start()` is
-called a timestamp from xcore.ai's 100 MHz reference clock is captured. When the
-corresponding `timer_end()` call is made, another timestamp is captured and the
-former is subtracted to get the elapsed clock ticks between `timer_start()` and
-`timer_end()`. 
+They also perform the conversion from the PCM sample values to `double` sample
+values. Notice that `buff[]` is being filled in reverse order. 
 
-This is done for each computed output sample, and just before the application
-terminates, an average is computed and sent to `tile[0]` by
-`timer_report_task()`.
+The conversion requires an exponent to establish the scale of the fixed-point
+values. Here both `input_exp` and `output_exp` are `-31`.
+
+To see the logic of this conversion, consider a 32-bit PCM sample being received
+with a value of `0x2000000`. `ldexp()` is used to perform the conversion as
+
+$$
+\begin{aligned}
+  \mathtt{samp\_f} &\gets \mathtt{ldexp(0x20000000, input\_exp)}  \\
+   &= (\mathtt{0x20000000} \cdot 2^{\mathtt{input\_exp}})         \\
+   &= 2^{29} \cdot 2^{\mathtt{input\_exp}}                        \\
+   &= 2^{(29 + \mathtt{input\_exp})}                              \\
+   &= 2^{(29 - 31)}                                               \\
+   &= 2^{-2}                                                      \\
+   &= 0.25
+\end{aligned}
+$$
+
+And so the 32-bit PCM value `0x20000000` becomes the `double` value `0.25`.
+
+
+After receiving (and converting) the frame of new samples, `filter_task`
+computes `FRAME_SIZE` new output samples each the result of a call to
+`filter_sample()`, which we'll see shortly.
+
+Notice the calls to `timer_start()` and `timer_stop()` which happen in that
+loop.
+
+[`timer_start()`](TODO) and [`timer_stop()`](TODO) are how the application (and
+all subsequent stages) measures the filter performance. For full details, see
+[`timing.c`](TODO). The brief explanation is that it uses the device's 100 MHz
+reference clock is used to capture timestamps immediately before and after the
+new output sample is calculated. This tells us how many 100 MHz clock ticks
+elapsed while computing the output sample. The code in `timing.c` ultimately
+just computes the average time elapsed across all output samples.
+
+Once the frame of output samples is sent back to `wav_io_task` on `tile[0]`, the
+last thing to do is shift the contents of the `sample_history[]` buffer to make
+room for the next frame of input audio. This allows the samples to stay fully
+ordered.
+
 
 ### `filter_sample()`
 
-`filter_sample()` is the function where output sample values are computed. It is
-where most of the work is actually done.
+`filter_sample()` is the function where individual output sample values are
+computed. It is where most of the work is actually done.
 
 From [`stage0.c`](TODO):
 ```c
+/**
+ * Apply the filter to produce a single output sample.
+ * 
+ * `sample_history[]` contains the `TAP_COUNT` most-recent input samples, with
+ * the newest samples first (reverse time order).
+ */
 double filter_sample(
     const double sample_history[TAP_COUNT])
 {
+  // The filter result is the simple inner product of the sample history and the
+  // filter coefficients. Because we've stored the sample history in reverse
+  // time order, the indices of sample_history[] match up with the indices of
+  // filter_coef[].
   double acc = 0.0;
   for(int k = 0; k < TAP_COUNT; k++)
     acc += sample_history[k] * filter_coef[k];
@@ -310,18 +344,18 @@ double filter_sample(
 ```
 
 Each call to `filter_sample()` produces exactly one output sample, and so a call
-to `filter_sample()` corresponds to a particular time step, and for that
-requires the most recent `TAP_COUNT` input sample values leading up to (and
-including) that time step. The input parameter `sample_history[]` then needs to
-point to the main sample history buffer, offset according to the current sample
-within the current frame.
+to `filter_sample()` corresponds to a particular time step, and that requires
+the most recent `TAP_COUNT` input sample values leading up to (and including)
+that time step. The input parameter `sample_history[]` then needs to point to
+the main sample history buffer, offset according to the current sample within
+the current frame.
 
 A double-precision accumulator is initialized to zero, and the inner product of
 the sample history and filter coefficient vectors is computed in a simple `for`
 loop.
 
 `filter_coef[]`, the vector of filter coefficients, is defined for this stage in
-[`filter_coef_double.c`](../apps/common/filters/filter_coef_double.c). That
+[`filter_coef_double.c`](../src/common/filters/filter_coef_double.c). That
 coefficient vector is represented by a `TAP_COUNT`-element array of `double`s,
 where every element is set to the value $\frac{1}{1024} = 0.0009765625$.
 

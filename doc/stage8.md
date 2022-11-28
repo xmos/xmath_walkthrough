@@ -147,7 +147,7 @@ largely resembles that of **Stage 7**. There are a couple points here in **Stage
 First, in **Stage 8** we directly specify the exponent associated with the
 `frame_out` BFP vector to be `output_exp + 2`. This isn't something we would
 ordinarily do for BFP arithmetic. Normally the BFP functions would select
-exponents for us. However, `bfp_s32_dot()` is already doing that work, for each computed sample. So instead here we arbitrarily choose an exponent, just as an excuse to use another BFP function we haven't seen before in `filter_thread()`.
+exponents for us. However, `bfp_s32_dot()` is already doing that work, for each computed sample. So instead here we arbitrarily choose an exponent, just as an excuse to use another BFP function we haven't seen before in `filter_task()`.
 
 Next, and more interestingly, in **Stage 8**'s `filter_frame()` we create a new
 `bfp_s32_t` object, `sample_history`, which points to the same buffer as
@@ -165,11 +165,11 @@ guaranteed that `sample_history.data` has _at least_ as much headroom as
 than we actually have in `sample_history.data`, but recomputing it for each
 output sample would be unreasonably expensive.
 
-### `filter_thread()`
+### `filter_task()`
 
 From `stage7.c`:
 ```c
-void filter_thread(
+void filter_task(
     chanend_t c_pcm_in, 
     chanend_t c_pcm_out)
 {
@@ -201,7 +201,7 @@ void filter_thread(
 
 From `stage8.c`:
 ```c
-void filter_thread(
+void filter_task(
     chanend_t c_pcm_in, 
     chanend_t c_pcm_out)
 {
@@ -240,8 +240,8 @@ void filter_thread(
 }
 ```
 
-Here, the most notable difference between **Stage 7**'s `filter_thread()` and
-**Stage 8**'s `filter_thread()` is that **Stage 8**'s starts by initializing the
+Here, the most notable difference between **Stage 7**'s `filter_task()` and
+**Stage 8**'s `filter_task()` is that **Stage 8**'s starts by initializing the
 BFP vectors that are used.
 
 Generally speaking, all `bfp_s32_t` must be initialized prior to being used as

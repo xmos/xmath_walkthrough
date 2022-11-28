@@ -52,14 +52,14 @@ commas and/or whitespace. The coefficient order is `b[0]`, `b[1]`, `b[2]`, etc.
 To generate the filter, starting from your workspace root:
 
 ```sh
-cd xmath_walkthrough/apps/stage11
+cd xmath_walkthrough/src/stage11
 python ../../lib_xcore_math/lib_xcore_math/script/gen_fir_filter_s32.py --taps 1024 userFilter coef.csv
 ```
 
 The output should be similar to the following:
 
 ```sh
-workspace\xmath_walkthrough\apps\stage11$ python ..\..\lib_xcore_math\lib_xcore_math\script\gen_fir_filter_s32.py --taps 1024 userFilter coef.csv
+workspace\xmath_walkthrough\src\stage11$ python ..\..\lib_xcore_math\lib_xcore_math\script\gen_fir_filter_s32.py --taps 1024 userFilter coef.csv
 Filter tap count: 1024
 Files to be written:
   .\userFilter.h
@@ -99,13 +99,13 @@ void filter_frame(
 }
 ```
 
-Finally, in `filter_thread()`, `userFilter_init()` is used to initialize
+Finally, in `filter_task()`, `userFilter_init()` is used to initialize
 `userFilter()`. `userFilter_init()` requires no arguments because the
 `filter_fir_s32_t` object and all its required information is managed
 internally.
 
 ```c
-void filter_thread(
+void filter_task(
     chanend_t c_pcm_in, 
     chanend_t c_pcm_out)
 {

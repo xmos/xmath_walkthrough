@@ -22,7 +22,7 @@ advanced usage like this, the lower level API is required.
 ## Code Changes
 
 The first thing to notice is that **Stage 9** has its implementation split
-between two files, `stage9.c` and `stage9.xc`. `filter_thread()` and
+between two files, `stage9.c` and `stage9.xc`. `filter_task()` and
 `filter_frame()` (in `stage9.c`) are unchanged between **Stage 7** and **Stage
 9**. `filter_sample()` is implemented in `stage9.xc`.
 
