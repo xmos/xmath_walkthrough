@@ -7,29 +7,54 @@
 extern
 const double filter_coef[TAP_COUNT];
 
-/**
- * The exponent associated with the input signal.
- */
-const exponent_t input_exp = -31;
 
-/**
- * The exponent associated with the output signal.
- */
-const exponent_t output_exp = input_exp;
+// Accept a frame of new audio data 
+static inline 
+void rx_frame(
+    double buff[],
+    const chanend_t c_audio)
+{    
+  // The exponent associated with the input samples
+  const exponent_t input_exp = -31;
 
-/**
- * Apply the filter to produce a single output sample.
- * 
- * `sample_history[]` contains the `TAP_COUNT` most-recent input samples, with
- * the newest samples first (reverse time order).
- */
+  for(int k = 0; k < FRAME_SIZE; k++){
+    // Read PCM sample from channel
+    const int32_t sample_in = (int32_t) chan_in_word(c_audio);
+    // Convert PCM sample to floating-point
+    const double samp_f = ldexp(sample_in, input_exp);
+    // Place at beginning of history buffer in reverse order (to match the
+    // order of filter coefficients).
+    buff[FRAME_SIZE-k-1] = samp_f;
+  }
+}
+
+
+// Send a frame of new audio data
+static inline 
+void tx_frame(
+    const chanend_t c_audio,
+    const double buff[])
+{    
+  // The exponent associated with the output samples
+  const exponent_t output_exp = -31;
+
+  // Send FRAME_SIZE new output samples at the end of each frame.
+  for(int k = 0; k < FRAME_SIZE; k++){
+    // Get double sample from frame output buffer (in forward order)
+    const double samp_f = buff[k];
+    // Convert double sample back to PCM using the output exponent.
+    const q1_31 sample_out = round(ldexp(samp_f, -output_exp));
+    // Put PCM sample in output channel
+    chan_out_word(c_audio, sample_out);
+  }
+}
+
+
+//Apply the filter to produce a single output sample
 double filter_sample(
     const double sample_history[TAP_COUNT])
 {
-  // The filter result is the simple inner product of the sample history and the
-  // filter coefficients. Because we've stored the sample history in reverse
-  // time order, the indices of sample_history[] match up with the indices of
-  // filter_coef[].
+  // Compute the inner product of sample_history[] and filter_coef[]
   double acc = 0.0;
   for(int k = 0; k < TAP_COUNT; k++)
     acc += sample_history[k] * filter_coef[k];
@@ -45,19 +70,20 @@ double filter_sample(
 void filter_task(
     chanend_t c_audio)
 {
-  // History of received input samples, stored in reverse-chronological order.
+  // History of received input samples, stored in reverse-chronological order
   double sample_history[HISTORY_SIZE] = {0};
 
-  // Buffer used to hold output samples before they're transferred to tile[0].
+  // Buffer used to hold output samples
   double frame_output[FRAME_SIZE] = {0};
 
   // Loop forever
   while(1) {
-    // Read in a new frame. It is placed in reverse order at the beginning of
-    // sample_history[]
-    read_frame_as_double(&sample_history[0], c_audio, input_exp, FRAME_SIZE);
-    
-    // Compute FRAME_SIZE output samples.
+
+    // Read in a new frame
+    rx_frame(&sample_history[0], 
+             c_audio);
+
+    // Calc output frame
     for(int s = 0; s < FRAME_SIZE; s++){
       timer_start();
       frame_output[s] = filter_sample(&sample_history[FRAME_SIZE-s-1]);
@@ -65,11 +91,12 @@ void filter_task(
     }
 
     // Send out the processed frame
-    send_frame_as_double(c_audio, &frame_output[0], output_exp, FRAME_SIZE);
+    tx_frame(c_audio, 
+             &frame_output[0]);
 
-    // Finally, shift the sample_history[] buffer up FRAME_SIZE samples.
-    // This is required to maintain ordering of the sample history.
-    memmove(&sample_history[FRAME_SIZE], &sample_history[0], 
+    // Make room for new samples at the front of the vector
+    memmove(&sample_history[FRAME_SIZE], 
+            &sample_history[0], 
             TAP_COUNT * sizeof(double));
   }
 }

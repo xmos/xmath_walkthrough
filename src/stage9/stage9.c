@@ -13,6 +13,28 @@ q1_31 filter_sample(
     const headroom_t history_hr);
 
 
+// Accept a frame of new audio data 
+static inline 
+void rx_frame(
+    int32_t buff[],
+    const chanend_t c_audio)
+{    
+  for(int k = 0; k < FRAME_SIZE; k++)
+    buff[FRAME_SIZE-k-1] = (q1_31) chan_in_word(c_audio);
+}
+
+
+// Send a frame of new audio data
+static inline 
+void tx_frame(
+    const chanend_t c_audio,
+    const int32_t buff[])
+{    
+  for(int k = 0; k < FRAME_SIZE; k++)
+    chan_out_word(c_audio, buff[k]);
+}
+
+
 /**
  * This is the thread entry point for the hardware thread which will actually 
  * be applying the FIR filter.
@@ -36,7 +58,8 @@ void filter_task(
   while(1) {
     // Read in a new frame. It is placed in reverse order at the beginning of
     // sample_history[]
-    read_frame(&sample_history[0], c_audio, FRAME_SIZE);
+    rx_frame(&sample_history[0], 
+             c_audio);
 
     // For now, the exponent associated with each new input frame is -31.
     sample_history_exp = -31;
@@ -54,11 +77,12 @@ void filter_task(
     }
 
     // Send out the processed frame
-    send_frame(c_audio, &frame_output[0], FRAME_SIZE);
+    tx_frame(c_audio, 
+             &frame_output[0]);
 
-    // Finally, shift the sample_history[] buffer up FRAME_SIZE samples.
-    // This is required to maintain ordering of the sample history.
-    memmove(&sample_history[FRAME_SIZE], &sample_history[0], 
+    // Make room for new samples at the front of the vector
+    memmove(&sample_history[FRAME_SIZE], 
+            &sample_history[0], 
             TAP_COUNT * sizeof(int32_t));
   }
 }

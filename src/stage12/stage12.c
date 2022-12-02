@@ -18,29 +18,47 @@
 extern 
 const q4_28 filter_coef[TAP_COUNT+(2*(FRAME_SIZE))];
 
-/**
- * The exponent associatd with the filter coefficients.
- * 
- * The value represented by the k'th coefficient is 
- * `ldexp(filter_coef[k], coef_exp)`.
- */
-const exponent_t coef_exp = -28;
 
-/**
- * The exponent associated with the input signal.
- * 
- * This exponent implies 32-bit PCM samples represent a value in the range
- * `[-1.0, 1.0)`.
- */
-const exponent_t input_exp = -31;
+// Accept a frame of new audio data 
+static inline 
+void rx_frame(
+    float buff[],
+    const chanend_t c_audio)
+{    
+  // The exponent associated with the input samples
+  const exponent_t input_exp = -31;
 
-/**
- * The exponent associated with the output signal.
- * 
- * This exponent implies 32-bit PCM samples represent a value in the range
- * `[-1.0, 1.0)`.
- */
-const exponent_t output_exp = input_exp;
+  for(int k = 0; k < FRAME_SIZE; k++){
+    // Read PCM sample from channel
+    const int32_t sample_in = (int32_t) chan_in_word(c_audio);
+    // Convert PCM sample to floating-point
+    const float samp_f = ldexpf(sample_in, input_exp);
+    // Place at beginning of history buffer in reverse order (to match the
+    // order of filter coefficients).
+    buff[FRAME_SIZE-k-1] = samp_f;
+  }
+}
+
+
+// Send a frame of new audio data
+static inline 
+void tx_frame(
+    const chanend_t c_audio,
+    const float buff[])
+{    
+  // The exponent associated with the output samples
+  const exponent_t output_exp = -31;
+
+  // Send FRAME_SIZE new output samples at the end of each frame.
+  for(int k = 0; k < FRAME_SIZE; k++){
+    // Get float sample from frame output buffer (in forward order)
+    const float samp_f = buff[k];
+    // Convert float sample back to PCM using the output exponent.
+    const q1_31 sample_out = roundf(ldexpf(samp_f, -output_exp));
+    // Put PCM sample in output channel
+    chan_out_word(c_audio, sample_out);
+  }
+}
 
 
 /**
@@ -65,11 +83,15 @@ float_s32_t filter_sample(
     const bfp_s32_t overlap_segment[OVERLAP_COUNT])
 {
   float_s32_t acc = {0,0};
+  
   for(int k = 0; k < OVERLAP_COUNT; k++){
     // Compute the inner product between one overlap segment and one filter block
-    float_s64_t tmp = bfp_s32_dot(&overlap_segment[k], &filter_block[k]);
+    float_s64_t tmp = bfp_s32_dot(&overlap_segment[k], 
+                                  &filter_block[k]);
+
     // Add it to the accumulator
-    acc = float_s32_add(acc, float_s64_to_float_s32(tmp));
+    acc = float_s32_add(acc, 
+                        float_s64_to_float_s32(tmp));
   }
 
   return acc;
@@ -109,23 +131,24 @@ void filter_frame(
     bfp_s32_t* output,
     const bfp_s32_t segments[OVERLAP_COUNT])
 {
-
   // Set each filter sub-vector to its initial position.
   for(int k = 0; k < OVERLAP_COUNT; k++){
     filter_blocks[k].data = (int32_t*) &filter_coef[k*(FRAME_SIZE)+1];
   }
 
   // Set the output exponent for the output BFP vector
-  output->exp = output_exp;
+  output->exp = -31;
   
   for(int s = 0; s < FRAME_SIZE; s++){
     timer_start();
 
     // Get the next output sample
-    float_s32_t sample_out = filter_sample(filter_blocks, segments);
+    float_s32_t sample_out = filter_sample(filter_blocks,
+                                segments);
 
     // Convert output sample to use correct exponent
-    output->data[s] = float_s32_to_fixed(sample_out, output->exp);
+    output->data[s] = float_s32_to_fixed(sample_out, 
+                                         output->exp);
 
     // Shift each filter block's data pointer up one word, to give the effect
     // that we're 'sliding' the filter coefficient vector along the input sample
@@ -143,7 +166,7 @@ void filter_frame(
 /**
  * BFP vector into which results are placed.
  */
-bfp_s32_t result;
+bfp_s32_t frame_out;
 
 /**
  * BFP vectors representing the last `OVERLAP_COUNT` frames of samples we've
@@ -165,19 +188,26 @@ void filter_frame_wrap(
     float sample_buff[FRAME_SIZE])
 {
   // Convert float vector to BFP vector and place in the first overlap segment
-  overlap_segments[0].exp = vect_f32_max_exponent(sample_buff, FRAME_SIZE);
-  vect_f32_to_vect_s32(&(overlap_segments[0].data[0]), &sample_buff[0], 
-                       FRAME_SIZE, overlap_segments[0].exp);
+  overlap_segments[0].exp = vect_f32_max_exponent(sample_buff, 
+                                                  FRAME_SIZE);
+
+  vect_f32_to_vect_s32(&(overlap_segments[0].data[0]), 
+                       &sample_buff[0], 
+                       FRAME_SIZE, 
+                       overlap_segments[0].exp);
 
   // Compute BFP vector headroom
   bfp_s32_headroom(&overlap_segments[0]);
 
   // Process a frame's worth of data
-  filter_frame(&result, overlap_segments);
+  filter_frame(&frame_out, 
+               overlap_segments);
 
   // Convert back to floating-point
-  vect_s32_to_vect_f32(&sample_buff[0], &result.data[0], 
-                       FRAME_SIZE, result.exp);
+  vect_s32_to_vect_f32(&sample_buff[0], 
+                       &frame_out.data[0], 
+                       FRAME_SIZE, 
+                       frame_out.exp);
 
   // Rotate the overlap segments up 1 (note that this doesn't actually move
   // the underlying samples, since the bfp_s32_t struct points to the sample
@@ -200,20 +230,35 @@ void filter_frame_wrap(
 void filter_task(
     chanend_t c_audio)
 {
+  // The exponent associatd with the filter coefficients
+  const exponent_t coef_exp = -28;
+
+  // Data buffers for the frame overlap segments
   int32_t overlaps_buff[OVERLAP_COUNT][FRAME_SIZE] = {{0}};
 
   // Initialize the overlap segments
   for(int k = 0; k < OVERLAP_COUNT; k++)
-    bfp_s32_init(&overlap_segments[k], &overlaps_buff[k][0], 
-                 0, FRAME_SIZE, 1);
+    bfp_s32_init(&overlap_segments[k], 
+                 &overlaps_buff[k][0], 
+                 0, 
+                 FRAME_SIZE, 
+                 1);
 
-  // Initialize the result vector
-  int32_t result_buff[FRAME_SIZE];
-  bfp_s32_init(&result, &result_buff[0], 0, FRAME_SIZE, 0);
+  // Initialize the frame_out vector
+  int32_t frame_out_buff[FRAME_SIZE];
+  bfp_s32_init(&frame_out, 
+               &frame_out_buff[0], 
+               0, 
+               FRAME_SIZE, 
+               0);
 
   // Initialize filter blocks (data pointer doesn't matter)
   for(int k = 0; k < OVERLAP_COUNT; k++){
-    bfp_s32_init(&filter_blocks[k], NULL, coef_exp, FRAME_SIZE, 0);
+    bfp_s32_init(&filter_blocks[k], 
+                 NULL, 
+                 coef_exp, 
+                 FRAME_SIZE, 
+                 0);
     filter_blocks[k].hr = HR_S32(filter_coef[FRAME_SIZE]);
   }
   
@@ -223,12 +268,14 @@ void filter_task(
   while(1) {
     // Read in a new frame. It is placed in reverse order at the beginning of
     // sample_history[]
-    read_frame_as_float(&sample_buff[0], c_audio, input_exp, FRAME_SIZE);
+    rx_frame(&sample_buff[0], 
+             c_audio);
 
     // Process the samples
     filter_frame_wrap(sample_buff);
 
     // Send out the processed frame
-    send_frame_as_float(c_audio, &sample_buff[0], output_exp, FRAME_SIZE);
+    tx_frame(c_audio, 
+             &sample_buff[0]);
   }
 }

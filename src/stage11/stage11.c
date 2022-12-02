@@ -8,6 +8,28 @@
 #include "userFilter.h"
 
 
+// Accept a frame of new audio data 
+static inline 
+void rx_frame(
+    int32_t buff[],
+    const chanend_t c_audio)
+{    
+  for(int k = 0; k < FRAME_SIZE; k++)
+    buff[k] = (q1_31) chan_in_word(c_audio);
+}
+
+
+// Send a frame of new audio data
+static inline 
+void tx_frame(
+    const chanend_t c_audio,
+    const int32_t buff[])
+{    
+  for(int k = 0; k < FRAME_SIZE; k++)
+    chan_out_word(c_audio, buff[k]);
+}
+
+
 /**
  * This is the thread entry point for the hardware thread which will actually 
  * be applying the FIR filter.
@@ -29,9 +51,10 @@ void filter_task(
 
   // Loop forever
   while(1) {
-    // Receive FRAME_SIZE new input samples at the beginning of each frame.
-    for(int k = 0; k < FRAME_SIZE; k++)
-      sample_buffer[k] = (int32_t) chan_in_word(c_audio);
+
+    // Read in a new frame
+    rx_frame(&sample_buffer[0], 
+             c_audio);
     
     // Compute FRAME_SIZE output samples.
     for(int s = 0; s < FRAME_SIZE; s++){
@@ -43,6 +66,7 @@ void filter_task(
     }
 
     // Send out the processed frame
-    send_frame(c_audio, &sample_buffer[0], FRAME_SIZE);
+    tx_frame(c_audio, 
+             &sample_buffer[0]);
   }
 }

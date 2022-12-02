@@ -6,7 +6,7 @@
 #include <xscope.h>
 #include <stdlib.h>
 
-#include "wav_proc.h"
+#include "wav_io.h"
 #include "timing.h"
 
 extern "C" {

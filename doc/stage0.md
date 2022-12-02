@@ -1,5 +1,5 @@
 
-[Prev](sw_organization.md) | [Home](intro.md) | [Next](stage1.md)
+[Prev](partA.md) | [Home](intro.md) | [Next](stage1.md)
 
 # Stage 0
 
@@ -61,7 +61,7 @@ for this.
 * IEEE 754 Floating-Point Values and Representation
 * Single-Precision and Double-Precision
 
-## Code Overview
+## Implementation
 
 The [Software Organization](sw_organization.md) page discussed the broad
 structure of the firmware. This page will zoom in and take the point-of-view of
@@ -70,10 +70,6 @@ the `filter_task` thread which actually does the filtering.
 The code specific to **Stage 0** is found in [`stage0.c`](TODO). There are two
 main functions involved in the `filter_task` thread and we'll take a look at
 each in a moment.
-
-> Note: Throughout this tutorial, code presented to the reader will sometimes
-> have any in-code comments stripped. This is done primarily for the sake of
-> brevity.
 
 Before diving into **Stage 0**'s filter implementation, there are several common
 bits of code shared by all or most stages. These are found within the
@@ -164,30 +160,9 @@ process them as a batch. Additionally, when processing a batch, it is more
 convenient and more efficient to store the sample history in a single linear
 buffer. That buffer must then be `HISTORY_SIZE` elements long.
 
-### `filter_task()`
 
-This is the filtering thread's entry point in **Stage 0**. After initialization
-this function loops forever, receiving a frame of input audio, processing it to
-get output audio, and then transmitting it back to `tile[0]` to be written to
-the output `wav` file.
+### Stage 0 `filter_task()` Implementation
 
-> **Note**: In **Stage 0** to keep things 'clean' we would prefer to be
-> receiving `double`-valued samples directly over the channel from `tile[0]`.
-> However, refactoring the application to achieve this would ultimately result
-> in more complicated software, rather than less. So, in Part A of this tutorial
-> where we work with floating-point arithmetic, we're simply _pretending_ that
-> we are receiving the input frame as `double` values by converting each sample
-> as it comes in. Likewise, a similar conversion happens with output samples.
-> 
-> The actual input and output sample values going between tiles are all
-> fixed-point integer values -- just as they're found in the `wav` files. The
-> exponent associated with these fixed-point values is more or less arbitrary,
-> so we've chosen `-31` as `input_exp` and `output_exp`, which means the range
-> of logical sample values is `[-1.0, 1.0)`.
->
-> For the sake of allowing output waveforms to be directly compared, we continue
-> to use an implicit or explicit output exponent of `-31` throughout this
-> tutorial.
 
 From [`stage0.c`](TODO):
 ```c
@@ -200,19 +175,20 @@ From [`stage0.c`](TODO):
 void filter_task(
     chanend_t c_audio)
 {
-  // History of received input samples, stored in reverse-chronological order.
+  // History of received input samples, stored in reverse-chronological order
   double sample_history[HISTORY_SIZE] = {0};
 
-  // Buffer used to hold output samples before they're transferred to tile[0].
+  // Buffer used to hold output samples
   double frame_output[FRAME_SIZE] = {0};
 
   // Loop forever
   while(1) {
-    // Read in a new frame. It is placed in reverse order at the beginning of
-    // sample_history[]
-    read_frame_as_double(&sample_history[0], c_audio, input_exp, FRAME_SIZE);
-    
-    // Compute FRAME_SIZE output samples.
+
+    // Read in a new frame
+    rx_frame(&sample_history[0], 
+             c_audio);
+
+    // Calc output frame
     for(int s = 0; s < FRAME_SIZE; s++){
       timer_start();
       frame_output[s] = filter_sample(&sample_history[FRAME_SIZE-s-1]);
@@ -220,15 +196,21 @@ void filter_task(
     }
 
     // Send out the processed frame
-    send_frame_as_double(c_audio, &frame_output[0], output_exp, FRAME_SIZE);
+    tx_frame(c_audio, 
+             &frame_output[0]);
 
-    // Finally, shift the sample_history[] buffer up FRAME_SIZE samples.
-    // This is required to maintain ordering of the sample history.
-    memmove(&sample_history[FRAME_SIZE], &sample_history[0], 
+    // Make room for new samples at the front of the vector
+    memmove(&sample_history[FRAME_SIZE], 
+            &sample_history[0], 
             TAP_COUNT * sizeof(double));
   }
 }
 ```
+
+This is the filtering thread's entry point in **Stage 0**. After initialization
+this function loops forever, receiving a frame of input audio, processing it to
+get output audio, and then transmitting it back to `tile[0]` to be written to
+the output `wav` file.
 
 `filter_task()` takes a channel end resource as a parameter. This is how it 
 communicates with `wav_io_task`.
@@ -243,61 +225,11 @@ before being sent to `wav_io_task`.
 The `filter_task` thread loops until the application is terminated (via
 `tile[0]`). In each iteration of the its main loop, the first step is to receive
 `FRAME_SIZE` new input samples and place them into the sample history buffer (in
-reverse order).
-
-The [`read_frame_as_double()`](TODO) and [`send_frame_as_double()`](TODO)
-functions, both defined in [`misc_func.h`](TODO), are helper functions which
-transfer a frame's worth of samples from/to `wav_io_task`. Here is
-`read_frame_as_double()`'s implementation:
-
-From [`misc_func.h`](TODO):
-```c
-static inline 
-void read_frame_as_double(
-    double buff[],
-    const chanend_t c_audio,
-    const exponent_t input_exp,
-    const unsigned frame_size)
-{    
-  for(int k = 0; k < frame_size; k++){
-    // Read PCM sample from channel
-    const int32_t sample_in = (int32_t) chan_in_word(c_audio);
-    // Convert PCM sample to floating-point
-    const double samp_f = ldexp(sample_in, input_exp);
-    // Place at beginning of history buffer in reverse order (to match the
-    // order of filter coefficients).
-    buff[frame_size-k-1] = samp_f;
-  }
-}
-```
-
-They also perform the conversion from the PCM sample values to `double` sample
-values. Notice that `buff[]` is being filled in reverse order. 
-
-The conversion requires an exponent to establish the scale of the fixed-point
-values. Here both `input_exp` and `output_exp` are `-31`.
-
-To see the logic of this conversion, consider a 32-bit PCM sample being received
-with a value of `0x2000000`. `ldexp()` is used to perform the conversion as
-
-$$
-\begin{aligned}
-  \mathtt{samp\_f} &\gets \mathtt{ldexp(0x20000000, input\_exp)}  \\
-   &= (\mathtt{0x20000000} \cdot 2^{\mathtt{input\_exp}})         \\
-   &= 2^{29} \cdot 2^{\mathtt{input\_exp}}                        \\
-   &= 2^{(29 + \mathtt{input\_exp})}                              \\
-   &= 2^{(29 - 31)}                                               \\
-   &= 2^{-2}                                                      \\
-   &= 0.25
-\end{aligned}
-$$
-
-And so the 32-bit PCM value `0x20000000` becomes the `double` value `0.25`.
-
+reverse order) (see `rx_frame()` below).
 
 After receiving (and converting) the frame of new samples, `filter_task`
 computes `FRAME_SIZE` new output samples each the result of a call to
-`filter_sample()`, which we'll see shortly.
+`filter_sample()`.
 
 Notice the calls to `timer_start()` and `timer_stop()` which happen in that
 loop.
@@ -310,38 +242,32 @@ new output sample is calculated. This tells us how many 100 MHz clock ticks
 elapsed while computing the output sample. The code in `timing.c` ultimately
 just computes the average time elapsed across all output samples.
 
-Once the frame of output samples is sent back to `wav_io_task` on `tile[0]`, the
-last thing to do is shift the contents of the `sample_history[]` buffer to make
-room for the next frame of input audio. This allows the samples to stay fully
-ordered.
+Once the frame of output samples is sent back to `wav_io_task` on `tile[0]` (see
+`tx_frame()`), the last thing to do is shift the contents of the
+`sample_history[]` buffer to make room for the next frame of input audio. This
+allows the samples to stay fully ordered.
 
 
-### `filter_sample()`
 
-`filter_sample()` is the function where individual output sample values are
-computed. It is where most of the work is actually done.
+
+### Stage 0 `filter_sample()` Implementation
 
 From [`stage0.c`](TODO):
 ```c
-/**
- * Apply the filter to produce a single output sample.
- * 
- * `sample_history[]` contains the `TAP_COUNT` most-recent input samples, with
- * the newest samples first (reverse time order).
- */
+//Apply the filter to produce a single output sample
 double filter_sample(
     const double sample_history[TAP_COUNT])
 {
-  // The filter result is the simple inner product of the sample history and the
-  // filter coefficients. Because we've stored the sample history in reverse
-  // time order, the indices of sample_history[] match up with the indices of
-  // filter_coef[].
+  // Compute the inner product of sample_history[] and filter_coef[]
   double acc = 0.0;
   for(int k = 0; k < TAP_COUNT; k++)
     acc += sample_history[k] * filter_coef[k];
   return acc;
 }
 ```
+
+`filter_sample()` is the function where individual output sample values are
+computed. It is where most of the work is actually done.
 
 Each call to `filter_sample()` produces exactly one output sample, and so a call
 to `filter_sample()` corresponds to a particular time step, and that requires
@@ -362,5 +288,160 @@ where every element is set to the value $\frac{1}{1024} = 0.0009765625$.
 ```c
 const double filter_coef[TAP_COUNT] = { ... };
 ```
+
+
+
+### Stage 0 `rx_frame()` Implementation
+
+
+From [`stage0.c`](TODO):
+```c
+// Accept a frame of new audio data 
+static inline 
+void rx_frame(
+    double buff[],
+    const chanend_t c_audio)
+{    
+  // The exponent associated with the input samples
+  const exponent_t input_exp = -31;
+
+  for(int k = 0; k < FRAME_SIZE; k++){
+    // Read PCM sample from channel
+    const int32_t sample_in = (int32_t) chan_in_word(c_audio);
+    // Convert PCM sample to floating-point
+    const double samp_f = ldexp(sample_in, input_exp);
+    // Place at beginning of history buffer in reverse order (to match the
+    // order of filter coefficients).
+    buff[FRAME_SIZE-k-1] = samp_f;
+  }
+}
+```
+
+`rx_frame()` accepts a frame of audio data over a channel. Note that we would ideally be directly receiving our sample data as `double` values, but that would complicate things for little benefit, so instead we are just converting the received PCM samples into `double` values as we receive them.
+
+`rx_frame()` places the (`double`) sample values into the buffer it was given in
+reverse chronological order, as is expected by `filter_sample()`.
+
+The actual input and output sample values going between tiles are all raw
+integer values -- just as they're found in the `wav` files. When converting to
+`double`, we are not compelled to keep the same scaling. So, if we treat these
+PCM values as fixed-point, the exponent associated with the values is more or
+less arbitrary. We've chosen `-31` as `input_exp` and `output_exp`, which
+means the range of logical sample values is `[-1.0, 1.0)`.
+
+For the sake of allowing output waveforms to be directly compared, we continue
+to use an implicit or explicit output exponent of `-31` throughout this
+tutorial.
+
+> **Note**: The reason the assumed exponent is arbitrary is because we're
+> implementing a _linear_ digital filter. If the filter was not linear (e.g. if
+> there was a square root somewhere in the logic) the output values would differ
+> depending upon our choice of input exponent.
+
+To see the logic of this conversion, consider a 32-bit PCM sample being received
+with a value of `0x2000000`. `ldexp()` is used to perform the conversion as
+
+$$
+\begin{aligned}
+  \mathtt{samp\_f} &\gets \mathtt{ldexp(0x20000000, input\_exp)}  \\
+   &= (\mathtt{0x20000000} \cdot 2^{\mathtt{input\_exp}})         \\
+   &= 2^{29} \cdot 2^{\mathtt{input\_exp}}                        \\
+   &= 2^{(29 + \mathtt{input\_exp})}                              \\
+   &= 2^{(29 - 31)}                                               \\
+   &= 2^{-2}                                                      \\
+   &= 0.25
+\end{aligned}
+$$
+
+And so the 32-bit PCM value `0x20000000` becomes the `double` value `0.25`.
+
+
+
+
+### Stage 0 `tx_frame()` Implementation
+
+
+From [`stage0.c`](TODO):
+```c
+// Send a frame of new audio data
+static inline 
+void tx_frame(
+    const chanend_t c_audio,
+    const double buff[])
+{    
+  // The exponent associated with the output samples
+  const exponent_t output_exp = -31;
+
+  // Send FRAME_SIZE new output samples at the end of each frame.
+  for(int k = 0; k < FRAME_SIZE; k++){
+    // Get double sample from frame output buffer (in forward order)
+    const double samp_f = buff[k];
+    // Convert double sample back to PCM using the output exponent.
+    const q1_31 sample_out = round(ldexp(samp_f, -output_exp));
+    // Put PCM sample in output channel
+    chan_out_word(c_audio, sample_out);
+  }
+}
+```
+
+`tx_frame()` mirrors `rx_frame()`. It takes in a frame's worth of
+`double`-valued  output audio samples, converts each to the appropriate 32-bit
+PCM value, and then sends them to the `wav_io` thread via a channel. Note that unlike `rx_frame()` this function does _not_ reorder the samples being sent.
+
+The logic of converting the `double` values to 32-bit PCM values via the output
+exponent is the reverse of that in `rx_frame()`.  Consider the case where we
+need to convert the `double` value `0.123456` into a 32-bit fixed-point value
+with `31` fractional bits.
+
+$$
+\begin{aligned}
+  \mathtt{output\_exp} &= -31                                     \\
+  \mathtt{samp\_f} &= 0.123456                                    \\
+  \\
+  \mathtt{sample\_out} &\gets \mathtt{round}
+               (\mathtt{ldexp}(0.123456, -\mathtt{output\_exp}))  \\
+    &= \mathtt{round}(\mathtt{ldexp}(0.123456, 31))               \\
+    &= \mathtt{round}(0.123456 \cdot 2^{31})                      \\
+    &= \mathtt{round}(265119741.247488)                           \\
+    &= 265119741                                                  \\
+\end{aligned}
+$$
+
+Now consider the same with the `double` value $-1.0$.
+
+$$
+\begin{aligned}
+  \mathtt{output\_exp} &= -31                                     \\
+  \mathtt{samp\_f} &= -1.0                                        \\
+  \\
+  \mathtt{sample\_out} &\gets \mathtt{round}
+               (\mathtt{ldexp}(-1.0, -\mathtt{output\_exp}))      \\
+    &= \mathtt{round}(-1.0 \cdot 2^{31})                          \\
+    &= -2147483648                                                \\
+    &= \mathtt{INT32\_MIN}                                        \\
+\end{aligned}
+$$
+
+Finally, consider the same with the `double` value $+1.0$.
+
+$$
+\begin{aligned}
+  \mathtt{output\_exp} &= -31                                     \\
+  \mathtt{samp\_f} &= 1.0                                         \\
+  \\
+  \mathtt{sample\_out} &\gets \mathtt{round}
+               (\mathtt{ldexp}( 1.0, -\mathtt{output\_exp}))      \\
+    &= \mathtt{round}( 1.0 \cdot 2^{31})                          \\
+    &= 2147483648                                                 \\
+    &= \mathtt{INT32\_MAX} + 1                                    \\
+\end{aligned}
+$$
+
+Whereas $-1.0$ was converted to $\mathtt{INT32\_MIN}$, the least possible `int32_t` value, $+1.0$ was converted to $(\mathtt{INT32\_MAX}+1) = -\mathtt{INT32\_MIN}$, which cannot be represented by a signed 32-bit integer.
+
+And so, using an output exponent of $-31$, the range of floating-point values which can be converted to a 32-bit integer without overflows is $[-1.0, 1.0)$.
+
+
+
 
 ## Results

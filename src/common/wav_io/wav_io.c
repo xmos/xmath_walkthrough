@@ -1,7 +1,7 @@
 
 // #include "xs3_math.h"
 
-#include "wav_proc.h"
+#include "wav_io.h"
 
 #define CHANNEL_COUNT   (1)
 #define BIT_DEPTH       (32)
@@ -52,6 +52,7 @@ int read_input_wav(
   file_read(&wav_input, (void*) &wav_input_buff[0], wav_input_bytes);
 
   printf("done.\n");
+  
   return 0;
 }
 
@@ -66,7 +67,7 @@ int write_output_wav(
   printf("Writing: %s... ", output_file_name);
 
   // This is the only way that seems to consistently write out the file.
-  FILE* tmp = fopen(output_file_name, "w");
+  FILE* tmp = fopen(output_file_name, "wb");
   for(int k = 0; k < wav_input_bytes; k++){
     fwrite(&wav_output_buff[k], 1, 1, tmp);
   }

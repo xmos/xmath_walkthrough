@@ -7,18 +7,27 @@
 extern 
 const q2_30 filter_coef[TAP_COUNT];
 
-/**
- * The exponent associatd with the filter coefficients.
- */
-const exponent_t coef_exp = -30;
 
-/**
- * The arithmetic right-shift required by the `filter_fir_s32_t` object. This
- * is the number of bits by which the filter's accumulator will be right-shifted
- * to obtain the output. The 30 is due to the VPU's 30-bit right-shift when
- * multiplying 32-bit operands.
- */
-const right_shift_t filter_shr = -(coef_exp + 30);
+// Accept a frame of new audio data 
+static inline 
+void rx_frame(
+    int32_t buff[],
+    const chanend_t c_audio)
+{    
+  for(int k = 0; k < FRAME_SIZE; k++)
+    buff[k] = (q1_31) chan_in_word(c_audio);
+}
+
+
+// Send a frame of new audio data
+static inline 
+void tx_frame(
+    const chanend_t c_audio,
+    const int32_t buff[])
+{    
+  for(int k = 0; k < FRAME_SIZE; k++)
+    chan_out_word(c_audio, buff[k]);
+}
 
 
 /**
@@ -30,6 +39,14 @@ const right_shift_t filter_shr = -(coef_exp + 30);
 void filter_task(
     chanend_t c_audio)
 {
+  // The exponent associatd with the filter coefficients.
+  const exponent_t coef_exp = -30;
+
+  // The arithmetic right-shift required by the `filter_fir_s32_t` object. This
+  // is the number of bits by which the filter's accumulator will be right-shifted
+  // to obtain the output. The 30 is due to the VPU's 30-bit right-shift when
+  // multiplying 32-bit operands.
+  const right_shift_t filter_shr = -(coef_exp + 30);
   
   // Buffer used to hold filter state. We do not need to manage the filter state
   // ourselves, but we must give it a buffer. Initializing the filter does not
@@ -43,14 +60,18 @@ void filter_task(
   int32_t sample_buffer[FRAME_SIZE] = {0};
 
   // The filter needs to be initialized before supplying it with samples.
-  filter_fir_s32_init(&fir_filter, &filter_state[0], 
-                      TAP_COUNT, &filter_coef[0], filter_shr);
+  filter_fir_s32_init(&fir_filter, 
+                      &filter_state[0], 
+                      TAP_COUNT, 
+                      &filter_coef[0], 
+                      filter_shr);
 
   // Loop forever
   while(1) {
-    // Receive FRAME_SIZE new input samples at the beginning of each frame.
-    for(int k = 0; k < FRAME_SIZE; k++)
-      sample_buffer[k] = (int32_t) chan_in_word(c_audio);
+
+    // Read in a new frame
+    rx_frame(&sample_buffer[0], 
+             c_audio);
     
     // Compute FRAME_SIZE output samples.
     for(int s = 0; s < FRAME_SIZE; s++){
@@ -59,11 +80,13 @@ void filter_task(
       // will keep track of its own history. So, once we've supplied it with a
       // sample, we can overwrite that memory, allowing us to use the same array
       // for input and output.
-      sample_buffer[s] = filter_fir_s32(&fir_filter, sample_buffer[s]);
+      sample_buffer[s] = filter_fir_s32(&fir_filter, 
+                                        sample_buffer[s]);
       timer_stop();
     }
 
     // Send out the processed frame
-    send_frame(c_audio, &sample_buffer[0], FRAME_SIZE);
+    tx_frame(c_audio, 
+             &sample_buffer[0]);
   }
 }

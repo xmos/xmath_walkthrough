@@ -48,10 +48,14 @@ FUNC_NAME:
   retsp NSTACKWORDS
     
 	.cc_bottom FUNC_NAME.function
-	.set	FUNC_NAME.nstackwords,NSTACKWORDS;     .globl	FUNC_NAME.nstackwords
-	.set	FUNC_NAME.maxcores,1;                  .globl	FUNC_NAME.maxcores
-	.set	FUNC_NAME.maxtimers,0;                 .globl	FUNC_NAME.maxtimers
-	.set	FUNC_NAME.maxchanends,0;               .globl	FUNC_NAME.maxchanends
+	.set	FUNC_NAME.nstackwords,NSTACKWORDS;     
+  .globl	FUNC_NAME.nstackwords;
+	.set	FUNC_NAME.maxcores,1;                  
+  .globl	FUNC_NAME.maxcores;
+	.set	FUNC_NAME.maxtimers,0;                 
+  .globl	FUNC_NAME.maxtimers;
+	.set	FUNC_NAME.maxchanends,0;               
+  .globl	FUNC_NAME.maxchanends;
 .Ltmp1:
 	.size	FUNC_NAME, .Ltmp1-FUNC_NAME
 #endif

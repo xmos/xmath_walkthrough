@@ -8,14 +8,14 @@ target_sources( ${LIB_NAME}
       file_utils/fileio.c
       file_utils/wav_utils.c
       timing/timing.c
-      wav_proc/wav_proc.c
+      wav_io/wav_io.c
 )
 
 target_include_directories( ${LIB_NAME} 
     PUBLIC 
       file_utils
       timing
-      wav_proc
+      wav_io
       misc
 )
 

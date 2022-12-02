@@ -79,7 +79,9 @@ q1_31 filter_sample(
   {
     partial[tid] = vect_s32_dot(&sample_history[elms * tid],
                                 &filter_coef[elms * tid],
-                                elms, b_shr, c_shr);
+                                elms, 
+                                b_shr, 
+                                c_shr);
   }
   // The above par block joins on the threads that were started and will resume
   // when each thread completes.
@@ -88,7 +90,6 @@ q1_31 filter_sample(
   acc.mant = 0;
   for(int k = 0; k < 4; k++)
     acc.mant += partial[k];
-
 
   // Convert the result to a fixed-point value using the output exponent
   q1_31 sample_out = float_s64_to_fixed(acc, output_exp);
