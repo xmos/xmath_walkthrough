@@ -38,8 +38,6 @@ void rx_frame(
   // We happen to know a priori that samples coming in will have a fixed 
   // exponent of input_exp, and there's no reason to change it, so we'll just
   // use that.
-  // TODO -- Randomize the exponent to simulate receiving differently-scaled
-  // frames?
   *frame_in_exp = -31;
 
   for(int k = 0; k < FRAME_SIZE; k++)
