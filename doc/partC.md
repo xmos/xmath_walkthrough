@@ -1,11 +1,21 @@
 
 [Prev](stage5.md) | [Home](intro.md) | [Next](stage6.md)
 
+
+
 # Part C: Block Floating-Point Arithmetic
 
 In **Part B** our digital FIR filter was implemented using fixed-point
 arithmetic. In **Part C** we will update it to use block floating-point (BFP)
 arithmetic.
+
+* [Stages](#stages)
+* [Block Floating-Point](#block-floating-point)
+* [Headroom](#headroom)
+* [Choosing Exponents](#choosing-exponents)
+* [BFP in `lib_xcore_math`](#bfp-in-lib_xcore_math)
+  * [BFP Types](#bfp-types)
+  * [BFP Operations](#bfp-operations)
 
 With fixed-point arithmetic we had to be mindful of the range of logical values
 our samples may take, so as to avoid overfloating the mantissas used to
@@ -546,3 +556,47 @@ possible values of the result is _twice_ that of the element-wise products
 themselves, implying the exponent will need to be incremented to avoid
 overflows. If `16` element-wise products are being added, the result may be 16
 times as large, requiring an extra `4` bits ( $4=log_2(16)$ ) to store the result, or an increment of the output exponent by `4`.
+
+## BFP in `lib_xcore_math`
+
+### BFP Types
+
+
+`bfp_s32_t` is a struct type from `lib_xcore_math` which
+represents a BFP vector with 32-bit mantissas. The `bfp_s32_t` type has 4
+important fields:
+
+Field             | Description
+-----             | -----------
+`int32_t* data`   | A pointer to an `int32_t` array; the buffer which backs the mantissa vector.
+`unsigned length` | Indicates the number of elements in the BFP vector. 
+`exponent_t exp`  | The exponent associated with the vector's mantissas.
+`headroom_t hr`   | The headroom of the vector's mantissas.
+
+> Note: in `lib_xcore_math`, unless otherwise specified, a vector's "length" is
+> always the number of elements, rather than its Euclidean length.
+
+### BFP Operations
+
+Several BFP operations will be encountered in **Part C** when we get to [**Stage 8**](stage8.md).
+
+#### `bfp_s32_init()`
+
+Initialization of a `bfp_s32_t` (32-bit BFP vector) is done with a call to
+[`bfp_s32_init()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L17-L45).
+The final parameter, `calc_hr` indicates whether the headroom should be
+calculated during initialization. This is unnecessary when the element buffer
+has not been filled with data.
+
+#### `bfp_s32_dot()`
+
+[`bfp_s32_dot()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L498-L522)
+computes the inner product between two BFP vectors, but unlike `vect_s32_dot()`,
+it takes care of all the management of exponents and headroom for us.
+`bfp_s32_dot()` basically encapsulates all the logic being performed in [**Stage
+7**'s `filter_sample()`](TODO) (apart from converting the output to the proper
+fixed-point representation).
+
+#### `bfp_s32_headroom()`
+
+#### `bfp_s32_use_exponent()`

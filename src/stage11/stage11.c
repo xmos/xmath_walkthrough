@@ -16,6 +16,8 @@ void rx_frame(
 {    
   for(int k = 0; k < FRAME_SIZE; k++)
     buff[k] = (q1_31) chan_in_word(c_audio);
+
+  timer_start(TIMING_FRAME);
 }
 
 
@@ -25,6 +27,8 @@ void tx_frame(
     const chanend_t c_audio,
     const int32_t buff[])
 {    
+  timer_stop(TIMING_FRAME);
+
   for(int k = 0; k < FRAME_SIZE; k++)
     chan_out_word(c_audio, buff[k]);
 }
@@ -58,11 +62,11 @@ void filter_task(
     
     // Compute FRAME_SIZE output samples.
     for(int s = 0; s < FRAME_SIZE; s++){
-      timer_start();
+      timer_start(TIMING_SAMPLE);
       // userFilter() is the generated function to add a new input sample and get
       // back the filtered result.
       sample_buffer[s] = userFilter(sample_buffer[s]);
-      timer_stop();
+      timer_stop(TIMING_SAMPLE);
     }
 
     // Send out the processed frame

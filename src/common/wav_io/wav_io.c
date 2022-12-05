@@ -84,23 +84,31 @@ int write_output_wav(
  */
 int write_performance_info(
     const char* perf_file_name,
-    const float ave_filter_time_ns)
+    const float ave_sample_time_ns,
+    const float ave_frame_time_ns)
 {
   file_t json_output;
-  const int ret = file_open(&json_output, perf_file_name, "wb");
+  const int ret = file_open(&json_output, 
+                            perf_file_name, 
+                            "wb");
   if(ret != 0) return ret;
 
   char str_buff[100] = {0};
   unsigned c = sprintf(str_buff, 
-      "{\n\"filter_time\": %0.02f,\n\"tap_time\": %0.02f\n}\n", 
-      ave_filter_time_ns,
-      ave_filter_time_ns / 1024);
+      "{\n\"sample_time\": %0.02f,\n\"tap_time\": %0.02f\n,\n\"frame_time\": %0.02f\n}\n", 
+      ave_sample_time_ns,
+      ave_sample_time_ns / 1024,
+      ave_frame_time_ns);
       
-  file_write(&json_output, str_buff, c);
+  file_write(&json_output, 
+             str_buff, 
+             c);
 
   file_close(&json_output);
 
-  printf("Average filter time: %0.02f ns\n", ave_filter_time_ns);
+  printf("Average sample time: %0.02f ns\n", ave_sample_time_ns);
+  printf("Average tap time: %0.02f ns\n", ave_sample_time_ns / 1024);
+  printf("Average frame time: %0.02f ns\n", ave_frame_time_ns);
   return 0;
 }
 
@@ -181,6 +189,11 @@ void wav_io_task(
   chan_out_word(c_timing, 0);
 
   unsigned tmp = chan_in_word(c_timing);
-  float timing_ns = ((float*)&tmp)[0];
-  write_performance_info(perf_file_name, timing_ns);
+  float sample_timing_ns = ((float*)&tmp)[0];
+  tmp = chan_in_word(c_timing);
+  float frame_timing_ns = ((float*)&tmp)[0];
+
+  write_performance_info(perf_file_name, 
+                         sample_timing_ns, 
+                         frame_timing_ns);
 }

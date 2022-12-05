@@ -1,5 +1,5 @@
 
-[Prev](stage7.md) | [Home](../intro.md) | [Next](stage9.md)
+[Prev](stage7.md) | [Home](../intro.md) | [Next](PartD.md)
 
 # Stage 8
 
@@ -38,6 +38,12 @@ headroom_t calc_headroom(
 }
 ```
 
+In this stage `calc_headroom()` just calls the `bfp_s32_headroom()` operation on
+the provided BFP vector. `bfp_s32_headroom()` _both_ updates the `hr` field of
+the `bfp_s32_t` object, and returns that headroom. In this case
+`calc_headroom()` also returns that headroom, though in **Stage 8** the returned
+value is not needed and not used.
+
 ### **Stage 8** `filter_task()` Implementation
 
 From [`stage8.c`](TODO):
@@ -62,7 +68,6 @@ void filter_task(
   bfp_s32_t sample_history;
   bfp_s32_init(&sample_history, &sample_history_buff[0], -200, 
                HISTORY_SIZE, 0);
-  bfp_s32_set(&sample_history, 0, -31);
 
   // Represents output frame as a BFP vector
   int32_t frame_output_buff[FRAME_SIZE] = {0};
@@ -93,6 +98,23 @@ void filter_task(
 }
 ```
 
+In **Stage 8** `filter_task()` is quite similar to that in the previous two
+stages. This time we have a few calls at the beginning to initialize some of the
+BFP vectors. Notably, this time we must intialize `bfp_filter_coef`, the BFP
+vector representing the filter coefficients, which we did not need to do in
+previous stages.
+
+`bfp_s32_init()` is used to initialize each of the BFP vectors, associating a
+`bfp_s32_t` object with an exponent, length, and most importantly, the buffer
+used to store the vector's elements. The final argument to `bfp_s32_init()` is a
+boolean indicating whether the vector's headroom should be calculated during
+initialization.
+
+While calculating the headroom involves iterating over the array's data, which
+should be avoided when unnecessary. In particular, it usually does not make
+sense to calculate headroom if the element buffer hasn't already been populated
+with initial values.
+
 ### **Stage 8** `filter_frame()` Implementation
 
 From [`stage8.c`](TODO):
@@ -100,28 +122,24 @@ From [`stage8.c`](TODO):
 // Calculate entire output frame
 void filter_frame(
     bfp_s32_t* frame_out,
-    const bfp_s32_t* history_in)
+    const bfp_s32_t* sample_history)
 { 
-  //We're faking an exponent here, just for the sake of demonstrating the BFP
-  // behavior.
-  frame_out->exp = -28;
-
-  // Initialize a new BFP vector which is a 'view' onto a TAP_COUNT-element 
-  // window of the history_in[] vector.
-  // The sample_history[] window will 'slide' along history_in[] for each output
-  // sample. This isn't something you'd typically need to do.
-  bfp_s32_t sample_history;
-  bfp_s32_init(&sample_history, &history_in->data[FRAME_SIZE],
-                history_in->exp, TAP_COUNT, 0);
-  sample_history.hr = history_in->hr; // Might not be precisely correct, but is safe
+  // Initialize a new BFP vector which is a 'view' onto a TAP_COUNT-element
+  // window of the sample_history[] vector. The history_view[] window will
+  // 'slide' along sample_history[] for each output sample. This isn't something
+  // you'd typically need to do.
+  bfp_s32_t history_view;
+  bfp_s32_init(&history_view, &sample_history->data[FRAME_SIZE],
+                sample_history->exp, TAP_COUNT, 0);
+  sample_history.hr = sample_history->hr; // Might not be precisely correct, but is safe
 
   // Compute FRAME_SIZE output samples.
   for(int s = 0; s < FRAME_SIZE; s++){
-    timer_start();
+    timer_start(TIMING_SAMPLE);
     // Slide the window down one index, towards newer samples
-    sample_history.data = sample_history.data - 1;
+    history_view.data = history_view.data - 1;
     // Get next output sample
-    float_s64_t samp = filter_sample(&sample_history);
+    float_s64_t samp = filter_sample(&history_view);
 
     // Because the exponents and headroom are the same for every call to
     // filter_sample(), the output exponent will also be the same (it's computed
@@ -131,11 +149,74 @@ void filter_frame(
     if(!s)
       frame_out->exp = samp.exp + 8;
 
-    frame_out->data[s] = float_s64_to_fixed(samp, frame_out->exp);
-    timer_stop();
+    frame_out->data[s] = float_s64_to_fixed(samp, 
+                                            frame_out->exp);
+    timer_stop(TIMING_SAMPLE);
   }
 }
 ```
+
+`filter_frame()` in **Stage 8** is tricky. At bottom the issue here is that
+`lib_xcore_math`'s BFP API doesn't provide any convolution operations suitable
+for this scenario. There _are_ a pair of 32-bit BFP convolution functions,
+[`bfp_s32_convolve_valid()`](TODO) and [`bfp_s32_convolve_same()`](TODO),
+however these are optimized for (and only support) small convolution kernels of
+`1`, `3`, `5` or `7` elements.
+
+In fact, BFP is probably _not_ the right approach for implementing an FIR filter
+using `lib_xcore_math` (we'll see better approaches in [**Stage
+10**](stage10.md) and [**Stage 11**](stage11.md)).
+
+But in keeping with the spirit of this tutorial, this stage attempt to implement
+the filter using the BFP API as best possible.
+
+`filter_frame()` first initializes a new BFP vector called `history_view`.
+However, `history_view` does not get its own data buffer. instead it points to
+an address somewhere within `sample_history`'s data buffer. Additionally, where
+`sample_history`'s `length` is `HISTORY_SIZE` (1280), the length of
+`history_view` is `TAP_COUNT` (1024). `history_view` uses the same exponent and
+headroom as `sample_history`. Taken together, this makes `history_view`
+something like a window onto some portion of the `sample_history` vector (hence
+history _"view"_).
+
+For each output sample computed by `filter_sample()`, `history_view`'s `data`
+pointer 'slides' back 1 element towards the start of the `sample_history`
+vector. Recall that in all previous stages, we actually did something similar --
+each call to `filter_sample()` in previous stages passed a pointer to a
+different location of the history vector.  This is basically doing the same
+thing, in a way that corrects for the fact that **Stage 8**'s `filter_sample()`
+needs a BFP vector _the same length as `bfp_filter_coef`_.
+
+The other tricky piece to `filter_frame()` in **Stage 8** is the determination
+of the output exponent.  Here we _could have_ just called
+`vect_s32_dot_prepare()` to determine the output exponent. For the sake of
+sticking with BFP functions it takes a different approach, which takes advantage
+of our knowledge of the situation.
+
+In particular, we know that under the surface `bfp_s32_dot()` is itself calling
+`vect_s32_dot_prepare()`, and that because the exponent and headroom of both
+`history_view` and `bfp_filter_coef` will be the same with each call (for a
+given frame), we know that the output exponent will be the same each time. So
+instead of calling `vect_s32_dot_prepare()` ourselves, we base the output
+exponent on the first exponent returned by `filter_sample()`.
+
+However, `filter_sample()` returns a `float_s64_t`, which, because of how
+`vect_s32_dot()` is implemented, won't take up more than 40 bits of the 64-bit
+mantissa. We need the result to fit in 32 bits, so we add 8 to the output
+exponent, and use `float_s64_to_fixed()` to shift samples before placing them in
+`frame_out`.
+
+> **Note**: To be clear, if you find yourself doing these things in an
+> actual application, you are probably better off reverting to the lower-level
+> Vector API. That doesn't mean getting rid of all `bfp_s32_t` in your
+> application or application component; it just means that within the function
+> that implements your operation, you may want to destructure the `bfp_s32_t`
+> and operate directly on its fields using the Vector API.
+> 
+> Additionally, if you're trying to use the BFP or Vector API to implement a
+> time-domain FIR or IIR filter, you may want to look at the [Digital Filter
+> API](TODO) instead.
+
 
 ### **Stage 8** `filter_sample()` Implementation
 
@@ -154,6 +235,18 @@ float_s64_t filter_sample(
   return bfp_s32_dot(sample_history, &bfp_filter_coef);
 }
 ```
+
+`filter_sample()` in **Stage 8** is quite simple. It just calls `bfp_s32_dot()`
+to compute the inner product of the provided `sample_history` BFP vector and the
+filter coefficient BFP vector. 
+
+In this stage, the filter coefficients are represented by `bfp_filter_coef` of
+type `bfp_s32_t`. This vector uses the same underlying coefficient array as the
+previous two stages (from `filter_coef_q2_30.c`), but they are wrapped in a BFP
+vector which tracks their length, exponent and headroom for the user. BFP
+vectors representd by a `bfp_s32_t` need to be initialized before they can be
+used. In this case `bfp_filter_coef` is initialized in `filter_task()` prior to
+entering the main thread loop.
 
 ### **Stage 8** `tx_frame()` Implementation
 
@@ -179,6 +272,16 @@ void tx_frame(
 }
 ```
 
+In **Stage 8** `tx_frame()` is similar to that in **Stage 7**.  Its job is to
+ensure output samples are using an exponent of `-31`, and then send them to the
+`wav_io` thread.
+
+In **Stage 7** this was accomplished by explicitly calculating a shift to be
+applied to each sample value and then applying them before putting the output
+sample into the channel. **Stage 8**, however, accomplishes this just by calling `bfp_s32_use_exponent()`.
+
+`bfp_s32_use_exponent()` coerces a BFP vector to use a particular exponent, shifting the elements as necessary to accomplish that. It is an easy way to move from a block floating-point domain (this stage's filter) into a fixed-point domain (the `wav_io` thread).
+
 ### **Stage 8** `rx_frame()` Implementation
 
 From [`stage8.c`](TODO):
@@ -191,8 +294,6 @@ void rx_frame(
   // We happen to know a priori that samples coming in will have a fixed 
   // exponent of input_exp, and there's no reason to change it, so we'll just
   // use that.
-  // TODO -- Randomize the exponent to simulate receiving differently-scaled
-  // frames?
   frame_in->exp = -31;
 
   for(int k = 0; k < FRAME_SIZE; k++)
@@ -202,6 +303,10 @@ void rx_frame(
   calc_headroom(frame_in);
 }
 ```
+
+`rx_frame()` is almost identical to that in **Stage 6** and **Stage 7**. The
+only real difference is that the mantissas, exponent and headroom are now
+encapsulated inside the `bfp_s32_t` object.
 
 ### **Stage 8** `rx_and_merge_frame()` Implementation
 
@@ -238,268 +343,15 @@ void rx_and_merge_frame(
 }
 ```
 
+`rx_and_merge_frame()` in **Stage 8** is somewhat simpler than in the previous
+two stages. A temporary BFP vector, `frame_in`, is initialized and `rx_frame()`
+is called to populate that with the new frame data. After that, the exponents of
+`frame_in` and `sample_history` still need to be reconciled, but this time once
+the exponent is chosen we use `bfp_s32_use_exponent()` on both vectors to make
+sure their exponents are equal. After that the new data is copied into the
+sample history.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
----
-
-## Code Changes
-
-### `filter_sample()`
-
-From `stage7.c`:
-```c
-q1_31 filter_sample(
-    const int32_t sample_history[TAP_COUNT],
-    const exponent_t history_exp,
-    const headroom_t history_hr)
-{
-  float_s64_t acc;
-  acc.mant = 0;
-
-  const headroom_t coef_hr = HR_S32(filter_coef[0]);
-
-  right_shift_t b_shr, c_shr;
-  vect_s32_dot_prepare(&acc.exp, &b_shr, &c_shr, 
-                        history_exp, coef_exp,
-                        history_hr, coef_hr, TAP_COUNT);
-
-  acc.mant = vect_s32_dot(&sample_history[0], &filter_coef[0], TAP_COUNT, 
-                        b_shr, c_shr);
-
-  q1_31 sample_out = float_s64_to_fixed(acc, output_exp);
-
-  return sample_out;
-}
-```
-
-From `stage8.c`:
-```c
-bfp_s32_t bfp_filter_coef;
-
-int32_t filter_sample(
-    const bfp_s32_t* sample_history
-    const exponent_t out_exp)
-{
-  float_s64_t acc = bfp_s32_dot(sample_history, &bfp_filter_coef);
-  
-  int32_t sample_out = float_s64_to_fixed(acc, out_exp);
-
-  return sample_out;
-}
-```
-
-In **Stage 8**, the filter coefficients are represented by `bfp_filter_coef` of
-type `bfp_s32_t`. `bfp_s32_t` is a struct type from `lib_xcore_math` which
-represents a BFP vector with 32-bit mantissas. The `bfp_s32_t` type has 4
-important fields:
-
-Field             | Description
------             | -----------
-`int32_t* data`   | A pointer to an `int32_t` array; the buffer which backs the mantissa vector.
-`unsigned length` | Indicates the number of elements in the BFP vector. 
-`exponent_t exp`  | The exponent associated with the vector's mantissas.
-`headroom_t hr`   | The headroom of the vector's mantissas.
-
-> Note: in `lib_xcore_math`, unless otherwise specified, a vector's "length" is
-> always the number of elements, rather than its Euclidean length.
-
-We also here for the first time encounter
-[`bfp_s32_dot()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L498-L522).
-Like `vect_s32_dot()`, `bfp_s32_dot()` computes the inner product between two
-BFP vectors, but unlike `vect_s32_dot()`, it takes care of all the management of
-exponents and headroom for us. `bfp_s32_dot()` basically encapsulates all the
-logic being performed in **Stage 7**'s `filter_sample()`, apart from converting
-the output to the proper fixed-point representation.
-
-Because our application is constrained to outputting the audio data in a
-fixed-point format, **Stage 8**'s `filter_sample()` still has to convert the
-`float_s64_t` result into the proper fixed-point format with a call to
-`float_s64_to_fixed()`.
-
-
-### `filter_frame()`
-
-From `stage7.c`:
-```c
-void filter_frame(
-    q1_31 frame_out[FRAME_SIZE],
-    const int32_t history_in[HISTORY_SIZE],
-    const exponent_t history_in_exp,
-    const headroom_t history_in_hr)
-{
-  for(int s = 0; s < FRAME_SIZE; s++){
-    timer_start();
-    frame_out[s] = filter_sample(&history_in[FRAME_SIZE-s-1], 
-                                  history_in_exp, 
-                                  history_in_hr);
-    timer_stop();
-  }
-}
-```
-
-From `stage8.c`:
-```c
-void filter_frame(
-    bfp_s32_t* frame_out,
-    const bfp_s32_t* history_in)
-{
-  frame_out->exp = output_exp+2;
-
-  bfp_s32_t sample_history;
-  bfp_s32_init(&sample_history, &history_in->data[FRAME_SIZE],
-                history_in->exp, TAP_COUNT, 0);
-
-  sample_history.hr = history_in->hr;
-
-  for(int s = 0; s < FRAME_SIZE; s++){
-    timer_start();
-    sample_history.data = sample_history.data - 1;
-    frame_out->data[s] = filter_sample(&sample_history);
-    timer_stop();
-  }
-}
-```
-
-Aside from the function parameters, **Stage 8**'s `filter_frame()` function
-largely resembles that of **Stage 7**. There are a couple points here in **Stage
-8** that are worth noticing.
-
-First, in **Stage 8** we directly specify the exponent associated with the
-`frame_out` BFP vector to be `output_exp + 2`. This isn't something we would
-ordinarily do for BFP arithmetic. Normally the BFP functions would select
-exponents for us. However, `bfp_s32_dot()` is already doing that work, for each computed sample. So instead here we arbitrarily choose an exponent, just as an excuse to use another BFP function we haven't seen before in `filter_task()`.
-
-Next, and more interestingly, in **Stage 8**'s `filter_frame()` we create a new
-`bfp_s32_t` object, `sample_history`, which points to the same buffer as
-`history_in`. This is because we can only compute the inner product of two
-vectors if they have the same number of elements. `bfp_filter_coef` has length `TAP_COUNT` (1024), whereas `history_in` has length `HISTORY_SIZE` (1280).
-
-To 'trick' `bfp_s32_dot()` into computing the inner product for us, we use
-`sample_history` as a `TAP_COUNT`-element window into `history_in`. For each
-subsequent output sample we slide that window over one element.
-
-Note that we set `sample_history.hr` to `history_in->hr`. Because the headroom
-of a vector is defined as the minimum headroom among its elements, we're
-guaranteed that `sample_history.data` has _at least_ as much headroom as
-`history_in->data`. In some cases `sample_history.hr` may be _less_ headroom
-than we actually have in `sample_history.data`, but recomputing it for each
-output sample would be unreasonably expensive.
-
-### `filter_task()`
-
-From `stage7.c`:
-```c
-void filter_task(
-    chanend_t c_pcm_in, 
-    chanend_t c_pcm_out)
-{
-  int32_t sample_history[HISTORY_SIZE] = {0};
-  exponent_t sample_history_exp;
-  headroom_t sample_history_hr;
-  q1_31 frame_output[FRAME_SIZE] = {0};
-
-  while(1) {
-    for(int k = 0; k < FRAME_SIZE; k++){
-      const int32_t sample_in = (int32_t) chan_in_word(c_pcm_in);
-      sample_history[FRAME_SIZE-k-1] = sample_in;
-    }
-
-    sample_history_exp = -31;
-    sample_history_hr = vect_s32_headroom(&sample_history[0], HISTORY_SIZE);
-
-    filter_frame(frame_output, sample_history, 
-                 sample_history_exp, sample_history_hr);
-
-    for(int k = 0; k < FRAME_SIZE; k++)
-      chan_out_word(c_pcm_out, frame_output[k]);
-    
-    memmove(&sample_history[FRAME_SIZE], &sample_history[0], 
-            TAP_COUNT * sizeof(int32_t));
-  }
-}
-```
-
-From `stage8.c`:
-```c
-void filter_task(
-    chanend_t c_pcm_in, 
-    chanend_t c_pcm_out)
-{
-  bfp_s32_init(&bfp_filter_coef, (int32_t*) &filter_coef[0], 
-               coef_exp, TAP_COUNT, 1);
-
-  int32_t sample_history_buff[HISTORY_SIZE] = {0};
-  bfp_s32_t sample_history;
-  bfp_s32_init(&sample_history, &sample_history_buff[0], -31, HISTORY_SIZE, 0);
-  bfp_s32_set(&sample_history, 0, -31);
-
-  int32_t frame_output_buff[FRAME_SIZE] = {0};
-  bfp_s32_t frame_output;
-  bfp_s32_init(&frame_output, &frame_output_buff[0], 0, FRAME_SIZE, 0);
-
-  while(1) {
-    for(int k = 0; k < FRAME_SIZE; k++){
-      const int32_t sample_in = (int32_t) chan_in_word(c_pcm_in);
-      sample_history.data[FRAME_SIZE-k-1] = sample_in;
-    }
-
-    sample_history.exp = -31;
-    bfp_s32_headroom(&sample_history);
-
-    filter_frame(&frame_output, &sample_history);
-
-    bfp_s32_use_exponent(&frame_output, output_exp);
-
-    for(int k = 0; k < FRAME_SIZE; k++)
-      chan_out_word(c_pcm_out, frame_output.data[k]);
-    
-
-    memmove(&sample_history.data[FRAME_SIZE], &sample_history.data[0], 
-            TAP_COUNT * sizeof(int32_t));
-  }
-}
-```
-
-Here, the most notable difference between **Stage 7**'s `filter_task()` and
-**Stage 8**'s `filter_task()` is that **Stage 8**'s starts by initializing the
-BFP vectors that are used.
-
-Generally speaking, all `bfp_s32_t` must be initialized prior to being used as
-an operand in an arithmetic operation. The most important two things initializing the BFP vector does are to attach its mantissa buffer and to set its length.
-
-Initialization of a `bfp_s32_t` (32-bit BFP vector) is done with a call to [`bfp_s32_init()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L17-L45). The final parameter, `calc_hr` indicates 
-whether the headroom should be calculated during initialization. This is 
-unnecessary when the element buffer has not been filled with data.
-
-As in **Stage 7**, each time a new input frame is received `sample_history`'s
-headroom is recomputed, however in **Stage 8**
-[`bfp_s32_headroom()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L190-L218)
-is used instead. `bfp_s32_headroom()` is basically a thin wrapper for
-`vect_s32_headroom()` except that it also sets the `hr` field of the BFP vector.
-
-Finally, in **Stage 8** after the new output samples are computed,
-[`bfp_s32_use_exponent()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L134-L187)
-is used to force the BFP vector to use `output_exp` as its exponent. A call to
-`bfp_s32_use_exponent()` with a constant for its `exp` parameter is essentially
-a conversion to a fixed-point format. In this case, the fixed-point format is a
-constraint imposed by the application.
 
 ## Results
 

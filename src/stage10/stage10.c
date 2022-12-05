@@ -1,9 +1,7 @@
 
 #include "common.h"
 
-/**
- * The box filter coefficient array.
- */
+// The box filter coefficient array.
 extern 
 const q2_30 filter_coef[TAP_COUNT];
 
@@ -16,6 +14,8 @@ void rx_frame(
 {    
   for(int k = 0; k < FRAME_SIZE; k++)
     buff[k] = (q1_31) chan_in_word(c_audio);
+
+  timer_start(TIMING_FRAME);
 }
 
 
@@ -25,6 +25,8 @@ void tx_frame(
     const chanend_t c_audio,
     const int32_t buff[])
 {    
+  timer_stop(TIMING_FRAME);
+
   for(int k = 0; k < FRAME_SIZE; k++)
     chan_out_word(c_audio, buff[k]);
 }
@@ -39,14 +41,21 @@ void tx_frame(
 void filter_task(
     chanend_t c_audio)
 {
-  // The exponent associatd with the filter coefficients.
+  // Exponent associated with input samples
+  const exponent_t input_exp = -31;
+  // Exponent associated with output samples
+  const exponent_t output_exp = -31;
+  // Exponent associatd with the filter coefficients
   const exponent_t coef_exp = -30;
+  // Right-shift applied by the VPU for 32-bit multiplies
+  const right_shift_t vpu_shr = 30;
+  // Exponent associated with the accumulator
+  const exponent_t acc_exp = input_exp + coef_exp + vpu_shr;
 
   // The arithmetic right-shift required by the `filter_fir_s32_t` object. This
-  // is the number of bits by which the filter's accumulator will be right-shifted
-  // to obtain the output. The 30 is due to the VPU's 30-bit right-shift when
-  // multiplying 32-bit operands.
-  const right_shift_t filter_shr = -(coef_exp + 30);
+  // is the number of bits by which the filter's accumulator will be
+  // right-shifted to obtain the output.
+  const right_shift_t acc_shr = output_exp - acc_exp;
   
   // Buffer used to hold filter state. We do not need to manage the filter state
   // ourselves, but we must give it a buffer. Initializing the filter does not
@@ -64,7 +73,7 @@ void filter_task(
                       &filter_state[0], 
                       TAP_COUNT, 
                       &filter_coef[0], 
-                      filter_shr);
+                      acc_shr);
 
   // Loop forever
   while(1) {
@@ -75,14 +84,14 @@ void filter_task(
     
     // Compute FRAME_SIZE output samples.
     for(int s = 0; s < FRAME_SIZE; s++){
-      timer_start();
+      timer_start(TIMING_SAMPLE);
       // We can overwrite the data in sample_buffer[] because the filter object
       // will keep track of its own history. So, once we've supplied it with a
       // sample, we can overwrite that memory, allowing us to use the same array
       // for input and output.
       sample_buffer[s] = filter_fir_s32(&fir_filter, 
                                         sample_buffer[s]);
-      timer_stop();
+      timer_stop(TIMING_SAMPLE);
     }
 
     // Send out the processed frame

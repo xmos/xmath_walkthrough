@@ -65,7 +65,7 @@ if __name__ == '__main__':
                       help="The stage name (e.g. 'stage1')")
   args = parser.parse_args()
   if args.stages == 'all':
-    args.stages = [f"stage{d}" for d in range(13)]
+    args.stages = [f"stage{d}" for d in range(12)]
   else:
     args.stages = [args.stages]
 

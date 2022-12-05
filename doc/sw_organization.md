@@ -1,5 +1,5 @@
 
-[Prev](building.md) | [Home](intro.md) | [Next](stage0.md)
+[Prev](building.md) | [Home](intro.md) | [Next](partA.md)
 
 # Software Organization
 

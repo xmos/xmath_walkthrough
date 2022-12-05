@@ -5,7 +5,7 @@ import json
 
 perf_info = dict()
 
-for stage_num in range(13):
+for stage_num in range(12):
   fname = f"out/stage{stage_num}.json"
   with open(fname) as fi:
     contents = json.load(fi)
@@ -14,6 +14,5 @@ for stage_num in range(13):
     perf_info[stage_num] = (filter_time, tap_time)
 
 print("Filter Times (1024 taps)")
-for sn,info in perf_info.items():
+for sn, info in perf_info.items():
   print(f"\tStage {sn}: {info[0]} ns")
-

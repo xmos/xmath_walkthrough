@@ -125,10 +125,10 @@ void filter_frame(
 
   // Now, compute the output sample values using that exponent.
   for(int s = 0; s < FRAME_SIZE; s++){
-    timer_start();
+    timer_start(TIMING_SAMPLE);
     frame_out[s] = filter_sample(&history_in[FRAME_SIZE-s-1], 
                                   acc_shr);
-    timer_stop();
+    timer_stop(TIMING_SAMPLE);
   }
 
   //Finally, calculate the headroom of the output frame.

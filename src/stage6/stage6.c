@@ -42,6 +42,8 @@ void rx_frame(
 
   for(int k = 0; k < FRAME_SIZE; k++)
     frame_in[k] = chan_in_word(c_audio);
+
+  timer_start(TIMING_FRAME);
   
   // Make sure the headroom is correct
   calc_headroom(frame_in, FRAME_SIZE);
@@ -114,6 +116,8 @@ void tx_frame(
 
   const right_shift_t samp_shr = output_exp - frame_out_exp;  
 
+  timer_stop(TIMING_FRAME);
+
   for(int k = 0; k < frame_size; k++){
     int32_t sample = frame_out[k];
     sample = ashr32(sample, samp_shr);
@@ -169,10 +173,10 @@ void filter_frame(
 
   // Now, compute the output sample values using that exponent.
   for(int s = 0; s < FRAME_SIZE; s++){
-    timer_start();
+    timer_start(TIMING_SAMPLE);
     frame_out[s] = filter_sample(&history_in[FRAME_SIZE-s-1], 
                                   acc_shr);
-    timer_stop();
+    timer_stop(TIMING_SAMPLE);
   }
 
   //Finally, calculate the headroom of the output frame.
@@ -221,16 +225,16 @@ void filter_task(
                  sample_history.exp, 
                  sample_history.hr);
 
+    // Make room for new samples at the front of the vector.
+    memmove(&sample_history.data[FRAME_SIZE], 
+            &sample_history.data[0], 
+            TAP_COUNT * sizeof(int32_t));
+
     // Send out the processed frame
     tx_frame(c_audio, 
              &frame_output.data[0], 
              frame_output.exp, 
              frame_output.hr, 
              FRAME_SIZE);
-
-    // Make room for new samples at the front of the vector.
-    memmove(&sample_history.data[FRAME_SIZE], 
-            &sample_history.data[0], 
-            TAP_COUNT * sizeof(int32_t));
   }
 }

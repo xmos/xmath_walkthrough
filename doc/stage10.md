@@ -3,105 +3,216 @@
 
 # Stage 10
 
-**Stage 10** takes a very different approach than previous stages. **Stage 10**
-uses the digital filter API [^1] provided by `lib_xcore_math`[^2]. In this
-example the FIR filter will be represented by a `filter_fir_s32_t`[^3] object.
-The digital filter APIs are highly optimized implementations of 16- and 32-bit
-FIR filters and 32-bit biquad filters.
+**Stage 10** takes a very different approach than all previous stages. **Stage
+10** uses the [digital filter API](TODO) provided by `lib_xcore_math`. In this
+example the FIR filter will be represented by a [`filter_fir_s32_t`](TODO)
+object. The digital filter APIs are highly optimized implementations of 16- and
+32-bit FIR filters and 32-bit biquad filters.
 
 ## Introduction
 
+The filtering API in `lib_xcore_math` is essentially a fixed-point API, though,
+being linear, the actual exponents associated with the input and output samples
+are not fixed, only their _relationship_ is. Specifically, it is the
+_difference_ between the input and output exponents that is fixed.
+
+
+## Implementation
+
+The implementation for **Stage 10** is divided between 3 functions,
+`rx_frame()`, `tx_frame()` and `filter_task()`.
+
+### **Stage 10** `rx_frame()` Implementation
+
+From [`stage10.c`](TODO):
+```C
+// Accept a frame of new audio data 
+static inline 
+void rx_frame(
+    int32_t buff[],
+    const chanend_t c_audio)
+{    
+  for(int k = 0; k < FRAME_SIZE; k++)
+    buff[k] = (q1_31) chan_in_word(c_audio);
+}
 ```
-TODO
+
+This is nearly identical to the `tx_frame()` found in **Stages** **3**, **4**
+and **5**. The only difference is that the newly received input samples are
+placed into `buff[]` in order, instead of reverse order. We'll see this is
+because the `filter_s32_t` object representing the filter handles its own state
+internally -- we don't need to account for the ordering of samples ourselves.
+
+
+### **Stage 10** `tx_frame()` Implementation
+
+From [`stage10.c`](TODO):
+```C
+// Send a frame of new audio data
+static inline 
+void tx_frame(
+    const chanend_t c_audio,
+    const int32_t buff[])
+{    
+  for(int k = 0; k < FRAME_SIZE; k++)
+    chan_out_word(c_audio, buff[k]);
+}
 ```
 
-## Background
+This is identical to the `tx_frame()` found in **Stages** **3**, **4** and
+**5**.
 
-```
-TODO
-```
 
-## Code Changes
+### **Stage 10** `filter_task()` Implementation
 
-The implementation for **Stage 10** is divided between `filter_task()` and 
-`filter_frame()`.
-
-From [`stage10.c`](stage10.c):
-```c
+From [`stage10.c`](TODO):
+```C
+/**
+ * This is the thread entry point for the hardware thread which will actually 
+ * be applying the FIR filter.
+ * 
+ * `c_audio` is the channel over which PCM audio data is exchanged with tile[0].
+ */
 void filter_task(
-    chanend_t c_pcm_in, 
-    chanend_t c_pcm_out)
+    chanend_t c_audio)
 {
+  // Exponent associated with input samples
+  const exponent_t input_exp = -31;
+  // Exponent associated with output samples
+  const exponent_t output_exp = -31;
+  // Exponent associatd with the filter coefficients
+  const exponent_t coef_exp = -30;
+  // Right-shift applied by the VPU for 32-bit multiplies
+  const right_shift_t vpu_shr = 30;
+  // Exponent associated with the accumulator
+  const exponent_t acc_exp = input_exp + coef_exp + vpu_shr;
+
+  // The arithmetic right-shift required by the `filter_fir_s32_t` object. This
+  // is the number of bits by which the filter's accumulator will be
+  // right-shifted to obtain the output.
+  const right_shift_t acc_shr = output_exp - acc_exp;
+  
+  // Buffer used to hold filter state. We do not need to manage the filter state
+  // ourselves, but we must give it a buffer. Initializing the filter does not
+  // clear the filter state to zeros, so we must do that here.
   int32_t filter_state[TAP_COUNT] = {0};
+
+  // The filter object itself
   filter_fir_s32_t fir_filter;
   
+  // This buffer is where input/output samples will be placed.
   int32_t sample_buffer[FRAME_SIZE] = {0};
 
-  filter_fir_s32_init(&fir_filter, &filter_state[0], 
-                      TAP_COUNT, &filter_coef[0], filter_shr);
+  // The filter needs to be initialized before supplying it with samples.
+  filter_fir_s32_init(&fir_filter, 
+                      &filter_state[0], 
+                      TAP_COUNT, 
+                      &filter_coef[0], 
+                      filter_shr);
 
+  // Loop forever
   while(1) {
-    for(int k = 0; k < FRAME_SIZE; k++)
-      sample_buffer[k] = (int32_t) chan_in_word(c_pcm_in);
+
+    // Read in a new frame
+    rx_frame(&sample_buffer[0], 
+             c_audio);
     
-    filter_frame(&fir_filter, sample_buffer);
-
-    for(int k = 0; k < FRAME_SIZE; k++){
-      chan_out_word(c_pcm_out, sample_buffer[k]);
+    // Compute FRAME_SIZE output samples.
+    for(int s = 0; s < FRAME_SIZE; s++){
+      timer_start(TIMING_SAMPLE);
+      // We can overwrite the data in sample_buffer[] because the filter object
+      // will keep track of its own history. So, once we've supplied it with a
+      // sample, we can overwrite that memory, allowing us to use the same array
+      // for input and output.
+      sample_buffer[s] = filter_fir_s32(&fir_filter, 
+                                        sample_buffer[s]);
+      timer_stop(TIMING_SAMPLE);
     }
+
+    // Send out the processed frame
+    tx_frame(c_audio, 
+             &sample_buffer[0]);
   }
 }
 ```
 
-`filter_task()` looks much like that in prior stages. Notably, the
-`sample_history` buffer has been removed. In its place are `filter_state` and
-`fir_filter`. `fir_filter` is the `filter_fir_s32_t` object which represents our
-FIR filter. `filter_state` is a buffer required by `fir_filter` to manage the
-filter's state.
+There are a couple things to notice before `filter_task()` gets to its loop.
 
-Before applying the filter using a `filter_fir_s32_t`, the object must be
-initialized with a call to `fir_filter_s32_init()`[^4]. The primary job of
-`fir_filter_s32_init()` is to tie the filter to a user-provided state buffer and
-to the user-provided coefficient array.
+First, we `sample_buffer[]`, where we store input _and_ output samples, is only
+`FRAME_SIZE` elements, instead of `HISTORY_SIZE`. That is because the filter
+stores the sample history itself.
 
-From [`stage10.c`](stage10.c):
-```c
-void filter_frame(
-    filter_fir_s32_t* filter,
-    int32_t sample_buffer[FRAME_SIZE])
-{
-  for(int s = 0; s < FRAME_SIZE; s++){
-    timer_start();
-    sample_buffer[s] = filter_fir_s32(filter, sample_buffer[s]);
-    timer_stop();
-  }
-}
-```
+Next, we now have a `filter_fir_s32_t` object called `fir_filter`.
+[`filter_fir_s32_t`](TODO) is defined in `lib_xcore_math` and represents our
+32-bit digital FIR filter. It must be initialized before it can be used.
 
-`filter_frame()` is especially simple. `filter_fir_s32()`[^5] is the library function which actually applies the filter. Its prototype is:
+Initialization of the filter is accomplished with a call to `filter_fir_s32_init()`:
 
-```c
-int32_t filter_fir_s32(
-    filter_fir_s32_t* filter,
-    const int32_t new_sample);
-```
+> From [`filter.h`](TODO):
+> ```c
+> C_API
+> void filter_fir_s32_init(
+>     filter_fir_s32_t* filter,
+>     int32_t* sample_buffer,
+>     const unsigned tap_count,
+>     const int32_t* coefficients,
+>     const right_shift_t shift);
+> ```
 
-`filter` is the `filter_fir_s32_t` object representing the filter to be applied.
-`new_sample` is the newly received input sample. The new output sample is
-returned.
+This requires pointers to the filter object itself, the coefficient array, and a
+buffer that the filter can use for maintaining the filter state. The filter coefficients we provide are the `Q2.30` coefficients from [`filter_coef_q2_30.c`](TODO), and we declared `sample_buffer[]` to serve as the state buffer.
 
-In `filter_frame()`, each new input sample of the newly received frame is
-supplied to the filter, and is replaced in `sample_buffer[]` by the returned
-output sample.
+The parameter `tap_count` is the number of filter taps, and the final parameter
+`shift` is an arithmetic right-shift that is applied to the accumulator to
+produce a 32-bit output sample.
+
+What output shift value should be used for the filter?  Here we follow the same logic as in [**Part B**](partB.md).
+
+$$
+\begin{aligned}
+  \mathtt{input\_exp} &= \mathtt{output\_exp} = -31 \\
+  \mathtt{acc\_exp} &= \mathtt{input\_exp} + \mathtt{coef\_exp} + \mathtt{vpu\_shr} \\
+  \mathtt{output\_exp} &= \mathtt{acc\_exp} + \mathtt{acc\_shr} \\
+  \\
+  \mathtt{acc\_shr} &= \mathtt{output\_exp} - \mathtt{acc\_exp} \\
+    &= -31 - (\mathtt{input\_exp} + \mathtt{coef\_exp} + \mathtt{vpu\_shr}) \\
+    &= -31 - (-31 + -30 + 30) \\
+    &= 0
+\end{aligned}
+$$
+
+Here, because `input_exp = output_exp` and `coef_exp = -vpu_shr`, the exponents
+and shifts all cancel out.
+
+The inside of `filter_task()`'s loop is much like it was in **Stage 3** with two
+key differences. First, there is no call at the end to `memmove()` to shift the
+sample history. Not only does the `filter_fir_s32_t` object handle the filter
+state for us, it also internally uses a circular buffer to store samples, so no
+shift is ever required.
+
+> **Note**: Of course, we could have been using a circular buffer for our sample
+> history in all the previous stages. This would have avoided the expense of
+> shifting `TAP_COUNT` samples at the end of every loop iteration, but it also
+> noticeably complicates the actual filter implementation, which is why we
+> avoided it.
+
+The other difference is that `filter_fir_s32()` is called inside the `for` loop, instead of `filter_sample()`.
+
+
+> From [`filter.h`](TODO):
+> ```c
+> C_API
+> int32_t filter_fir_s32(
+>     filter_fir_s32_t* filter,
+>     const int32_t new_sample);
+> ```
+
+`filter_fir_s32()` is the function which actually performs the filtering for us.
+It takes a pointer to the filter object and the newest input sample value, and
+returns the next output sample. We call this with out new input samples in order and we get out our output samples.
 
 ## Results
 
 ```
 TODO
 ```
-
-[^1]: [Digital filter API](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/filter.h)
-[^2]: [`lib_xcore_math`](https://github.com/xmos/lib_xcore_math)
-[^3]: [`filter_fir_s32_t`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/filter.h#L19-L275)
-[^4]: [`filter_fir_s32_init()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/filter.h#L278-L307)
-[^5]: [`filter_fir_s32()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/filter.h#L329-L350)

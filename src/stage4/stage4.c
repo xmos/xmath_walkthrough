@@ -16,6 +16,8 @@ void rx_frame(
 {    
   for(int k = 0; k < FRAME_SIZE; k++)
     buff[FRAME_SIZE-k-1] = (q1_31) chan_in_word(c_audio);
+
+  timer_start(TIMING_FRAME);
 }
 
 
@@ -25,6 +27,8 @@ void tx_frame(
     const chanend_t c_audio,
     const q1_31 buff[])
 {    
+  timer_stop(TIMING_FRAME);
+  
   for(int k = 0; k < FRAME_SIZE; k++)
     chan_out_word(c_audio, buff[k]);
 }
@@ -95,18 +99,18 @@ void filter_task(
 
     // Compute FRAME_SIZE output samples
     for(int s = 0; s < FRAME_SIZE; s++){
-      timer_start();
+      timer_start(TIMING_SAMPLE);
       frame_output[s] = filter_sample(&sample_history[FRAME_SIZE-s-1]);
-      timer_stop();
+      timer_stop(TIMING_SAMPLE);
     }
-
-    // Send out the processed frame
-    tx_frame(c_audio, 
-             &frame_output[0]);
 
     // Make room for new samples at the front of the vector
     memmove(&sample_history[FRAME_SIZE], 
             &sample_history[0], 
             TAP_COUNT * sizeof(int32_t));
+
+    // Send out the processed frame
+    tx_frame(c_audio, 
+             &frame_output[0]);
   }
 }

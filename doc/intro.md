@@ -72,7 +72,7 @@ simplify much of this book-keeping work for us.
 
 ### Part D -- Miscellaneous
 
-The last 4 stages (9-12) comprise Part D. Each of these stages addresses a
+The last 4 stages (9-11) comprise Part D. Each of these stages addresses a
 related topic of interest, such as parallelizing the work across cores, and
 using `lib_xcore_math`'s provided digital filter API.
 
@@ -92,5 +92,4 @@ using `lib_xcore_math`'s provided digital filter API.
 | Misc           | [Stage 9](stage9.md)   | Multi-threaded BFP
 |                | [Stage 10](stage10.md) | `lib_xcore_math` digital filter API
 |                | [Stage 11](stage11.md) | `lib_xcore_math` filter generation script
-|                | [Stage 12](stage12.md) | `float`-wrapped BFP.
 

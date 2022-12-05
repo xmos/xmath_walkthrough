@@ -26,6 +26,8 @@ void rx_frame(
     // order of filter coefficients).
     buff[FRAME_SIZE-k-1] = samp_f;
   }
+
+  timer_start(TIMING_FRAME);
 }
 
 
@@ -37,6 +39,8 @@ void tx_frame(
 {    
   // The exponent associated with the output samples
   const exponent_t output_exp = -31;
+
+  timer_stop(TIMING_FRAME);
 
   // Send FRAME_SIZE new output samples at the end of each frame.
   for(int k = 0; k < FRAME_SIZE; k++){
@@ -85,18 +89,18 @@ void filter_task(
 
     // Calc output frame
     for(int s = 0; s < FRAME_SIZE; s++){
-      timer_start();
+      timer_start(TIMING_SAMPLE);
       frame_output[s] = filter_sample(&sample_history[FRAME_SIZE-s-1]);
-      timer_stop();
+      timer_stop(TIMING_SAMPLE);
     }
-
-    // Send out the processed frame
-    tx_frame(c_audio, 
-             &frame_output[0]);
 
     // Make room for new samples at the front of the vector
     memmove(&sample_history[FRAME_SIZE], 
             &sample_history[0], 
             TAP_COUNT * sizeof(double));
+
+    // Send out the processed frame
+    tx_frame(c_audio, 
+             &frame_output[0]);
   }
 }

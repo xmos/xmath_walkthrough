@@ -9,10 +9,14 @@
 # include <xcore/chanend.h>
 #endif
 
+typedef enum {
+  TIMING_SAMPLE = 0,
+  TIMING_FRAME = 1,
+} timing_type_e;
 
-void timer_start();
-void timer_stop();
-float timer_avg_ns();
+void timer_start(const timing_type_e type);
+void timer_stop(const timing_type_e type);
+float timer_avg_ns(const timing_type_e type);
 
 #ifdef __XC__
 extern "C" {

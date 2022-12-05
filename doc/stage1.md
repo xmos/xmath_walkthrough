@@ -58,9 +58,9 @@ void filter_task(
 
     // Compute FRAME_SIZE output samples.
     for(int s = 0; s < FRAME_SIZE; s++){
-      timer_start();
+      timer_start(TIMING_SAMPLE);
       frame_output[s] = filter_sample(&sample_history[FRAME_SIZE-s-1]);
-      timer_stop();
+      timer_stop(TIMING_SAMPLE);
     }
 
     // Send out the processed frame
