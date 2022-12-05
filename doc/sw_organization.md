@@ -1,10 +1,10 @@
 
-[Prev](building.md) | [Home](intro.md) | [Next](partA.md)
+[Prev](building.md) | [Home](intro.md) | [Next](filter.md)
 
 # Software Organization
 
 Each of the firmwares built in this tutorial are variations of the same basic
-application. The application runs on an xcore Explorer board[^1], reads a `wav`
+application. The application runs on an xcore Explorer board, reads a `wav`
 file in from the host machine, processes the `wav` file audio through a digital
 FIR filter, and writes out the processed audio to a new `wav` file on the host
 machine.
@@ -73,7 +73,7 @@ The CMake source directory for the xcore.ai firmware is the root of the cloned
 `xmath_walkthrough` repository. 
 
 It defines an executable target for each stage of this tutorial. These are
-called `stage0`, `stage1`, ..., `stage12`. The `lib_xcore_math` library is also
+called `part1A`, `part1B`, ..., `part4C`. The `lib_xcore_math` library is also
 added to the CMake project, as the application firmware will depend on this.
 
 ## Applications
@@ -104,7 +104,7 @@ Tile 1 (`timer_report_task`):
 
 
 The application is a two-tile application with the following threads running
-(except [**Stage 9**](stage9.md)).
+(except [**Part 4A**](part4A.md)).
 
 | Tile      | Entry Point           | Description |
 |-----------|-----------------------|-------------|
@@ -122,9 +122,3 @@ This tutorial does not explain the implementation of the `wav_io_task` and
 implementation of only `filter_task()`. The behavior of the other threads can be
 easily discerned by inspecting the code.
 
-The next page will jump right into the details of [**Stage 0**](stage0.md), the
-initial filter implementation. Many aspects of the implementation are shared
-between multiple stages of this tutorial, and each will be described as it is
-encountered.
-
-[^1]: Explorer 

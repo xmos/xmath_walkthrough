@@ -27,7 +27,7 @@ int main(){
       // Called so xscope will be used for prints instead of JTAG.
       xscope_config_io(XSCOPE_IO_BASIC);
 
-      printf("Running Application: stage%u\n", STAGE_NUMBER);
+      printf("Running Application: %s\n", APP_NAME);
 
       // This is where the app will spend all its time.
       wav_io_task(c_audio_data, 

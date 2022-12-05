@@ -106,10 +106,10 @@ To run the application firmware, do following from your workspace root:
 xrun --xscope bin/<STAGE>.xe
 ```
 
-Where `<STAGE>` is the tutorial stage whose firmware is to be run. For example, to run Stage 5's firmware, the following command is used:
+Where `<STAGE>` is the tutorial stage whose firmware is to be run. For example, to run Part 2C's firmware, the following command is used:
 
 ```
-xrun --xscope bin/stage5.xe
+xrun --xscope bin/part2C.xe
 ```
 
 The executed stage should output two files, an output wav file, and a JSON file

@@ -64,8 +64,13 @@ if __name__ == '__main__':
   parser.add_argument("--stages", default='all', type=str,
                       help="The stage name (e.g. 'stage1')")
   args = parser.parse_args()
+
   if args.stages == 'all':
-    args.stages = [f"stage{d}" for d in range(12)]
+    args.stages = ["part1A", "part1B", "part1C",
+                   "part2A", "part2B", "part2C",
+                   "part3A", "part3B", "part3C",
+                   "part4A", "part4B", "part4C",
+                   ]
   else:
     args.stages = [args.stages]
 
