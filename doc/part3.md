@@ -1,22 +1,18 @@
 
-[Prev](part2C.md) | [Home](intro.md) | [Next](part3A.md)
-
-
 # Part 3: Block Floating-Point Arithmetic
 
 In **Part 2** our digital FIR filter was implemented using fixed-point
 arithmetic. In **Part 3** we will update it to use block floating-point (BFP)
 arithmetic.
 
-* [Stages](#stages)
-* [Component Functions](#component-functions)
-* [Block Floating-Point](#block-floating-point)
-* [Headroom](#headroom)
-* [Choosing Exponents](#choosing-exponents)
-* [BFP in `lib_xcore_math`](#bfp-in-lib_xcore_math)
-  * [Prepare Functions](#_prepare-functions-in-lib_xcore_math)
-  * [BFP Types](#bfp-types)
-  * [BFP Operations](#bfp-operations)
+```{toctree}
+---
+maxdepth: 1
+---
+./part3A.md
+./part3B.md
+./part3C.md
+```
 
 With fixed-point arithmetic we had to be mindful of the range of logical values
 our samples may take, so as to avoid overfloating the mantissas used to
@@ -37,6 +33,14 @@ optimized library calls to `lib_xcore_math`'s vector API.
 In **Part 3C**, the BFP vector objects from **Part 3A** are replaced with BFP
 vector types defined in `lib_xcore_math`, and the vector API calls from **Stage
 7** are replaced with operations from `lib_xcore_math`'s BFP API.
+
+## From `lib_xcore_math`
+
+This page makes references the following types and operations from
+`lib_xcore_math`:
+
+* [`vect_s32_dot()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32.h#L399-L480)
+* [`vect_s32_mul()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32.h#L828-L880)
 
 ## Component Functions
 
@@ -273,7 +277,7 @@ to the mantissas. Why? And how?
 The _why_ is because we must be sure, before performing the operation, that we
 aren't going to overflow the elements of the output vector.
 
-Consider [`vect_s16_mul()`](TODO) from `lib_xcore_math`'s Vector API. This
+Consider `vect_s16_mul() from `lib_xcore_math`'s Vector API. This
 function takes in two `int16_t` arrays and multiplies them element-wise to
 produce an `int16_t` output vector.
 
@@ -604,8 +608,8 @@ has not been filled with data.
 [`bfp_s32_dot()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L498-L522)
 computes the inner product between two BFP vectors, but unlike `vect_s32_dot()`,
 it takes care of all the management of exponents and headroom for us.
-`bfp_s32_dot()` basically encapsulates all the logic being performed in [**Stage
-7**'s `filter_sample()`](TODO) (apart from converting the output to the proper
+`bfp_s32_dot()` basically encapsulates all the logic being performed in **Part
+3B**'s `filter_sample() (apart from converting the output to the proper
 fixed-point representation).
 
 #### `bfp_s32_headroom()`

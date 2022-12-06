@@ -1,6 +1,4 @@
 
-[Prev](sw_organization.md) | [Home](intro.md) | [Next](common.md)
-
 # Digital FIR Filter
 
 The filter to be implemented in each stage of this tutorial is a 1024-tap

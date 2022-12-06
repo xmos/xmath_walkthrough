@@ -1,5 +1,5 @@
 
-[Prev](intro.md) | [Home](intro.md) | [Next](sw_organization.md)
+# Project Setup
 
 The first thing to do is to set up a workspace and configure the project for
 building. The workspace is any empty directory which will serve as the base

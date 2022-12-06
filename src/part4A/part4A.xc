@@ -26,6 +26,7 @@ extern "C" {
 unsafe {
 
 
+//// +filter_frame
 // Calculate entire output frame
 void filter_frame(
     int32_t* unsafe frame_out,
@@ -64,5 +65,6 @@ void filter_frame(
   //Finally, calculate the headroom of the output frame.
   *frame_out_hr = vect_s32_headroom((int32_t*)frame_out, FRAME_SIZE);
 }
+//// -filter_frame
 
 }

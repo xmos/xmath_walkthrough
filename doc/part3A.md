@@ -1,6 +1,4 @@
 
-[Prev](part3.md) | [Home](intro.md) | [Next](part3B.md)
-
 # Part 3A
 
 In the previous 3 stages the FIR filter was implemented using fixed-point
@@ -9,88 +7,46 @@ floating-point (BFP) arithmetic.
 
 In **Part 3A** we will implement the BFP logic in C to ensure the reader sees everything that is happening. In the following two stages we will use functions from the `lib_xcore_math` library to assist us.
 
+### From `lib_xcore_math`
+
+This page references the following types and operations from `lib_xcore_math`:
+
+* [`exponent_t`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/types.h#L56-L67)
+* [`headroom_t`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/types.h#L69-L77)
+* [`q1_31`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/types.h#L392-L402)
+* [`q2_30`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/types.h#L404-L414)
+* [`q4_28`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/types.h#L416-L426)
+* [`HR_S32()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/util.h#L145-L154)
+
 ## Implementation
 
 ### **Part 3A** `calc_headroom()` Implementation
 
-From [`part3A.c`](TODO):
-```c
-// Compute headroom of int32 vector.
-static inline
-headroom_t calc_headroom(
-    const int32_t vec[],
-    const unsigned length)
-{
-  // An int32 cannot have more than 32 bits of headroom.
-  headroom_t hr = 32;
-  for(int k = 0; k < length; k++)
-    hr = MIN(hr, HR_S32(vec[k]));
-  return hr;
-}
+```{literalinclude} ../src/part3A/part3A.c
+---
+language: C
+start-after: +calc_headroom
+end-before: -calc_headroom
+---
 ```
 
-As mentioned in [**Part 3**](part3.md#headroom), the headroom of a mantissa vector is defined as the least headroom among its elements. Here `hr` is initialized to 32, as a 32-bit integer cannot have more than 32 bits of headroom, and we iterate over elements, finding the least headroom.
+As mentioned in [**Part 3**](part3.md#headroom), the headroom of a mantissa
+vector is defined as the least headroom among its elements. Here `hr` is
+initialized to 32, as a 32-bit integer cannot have more than 32 bits of
+headroom, and we iterate over elements, finding the least headroom.
 
-[`HR_S32()`](TODO) is a macro defined in `lib_xcore_math` to efficiently get the headroom of a signed 32-bit integer. It uses a native instruction `CLS`, which reports the number of leading sign bits of an integer.
+`HR_S32()` is a macro defined in `lib_xcore_math` to efficiently get the
+headroom of a signed 32-bit integer. It uses a native instruction `CLS`, which
+reports the number of leading sign bits of an integer.
 
 ### **Part 3A** `filter_task()` Implementation
 
-From [`part3A.c`](TODO):
-```c
-/**
- * This is the thread entry point for the hardware thread which will actually 
- * be applying the FIR filter.
- * 
- * `c_audio` is the channel over which PCM audio data is exchanged with tile[0].
- */
-void filter_task(
-    chanend_t c_audio)
-{
-
-  // Represents the sample history as a BFP vector
-  struct {
-    int32_t data[HISTORY_SIZE]; // Sample data
-    exponent_t exp;             // Exponent
-    headroom_t hr;              // Headroom
-  } sample_history = {{0},-200,0};
-
-  // Represents output frame as a BFP vector
-  struct {
-    int32_t data[FRAME_SIZE];   // Sample data
-    exponent_t exp;             // Exponent
-    headroom_t hr;              // Headroom
-  } frame_output;
-
-  // Loop forever
-  while(1) {
-
-    // Read in a new frame
-    rx_and_merge_frame(&sample_history.data[0], 
-                       &sample_history.exp,
-                       &sample_history.hr, 
-                       c_audio);
-
-    // Calc output frame
-    filter_frame(&frame_output.data[0], 
-                 &frame_output.exp, 
-                 &frame_output.hr,
-                 &sample_history.data[0], 
-                 sample_history.exp, 
-                 sample_history.hr);
-
-    // Send out the processed frame
-    tx_frame(c_audio, 
-             &frame_output.data[0], 
-             frame_output.exp, 
-             frame_output.hr, 
-             FRAME_SIZE);
-
-    // Make room for new samples at the front of the vector.
-    memmove(&sample_history.data[FRAME_SIZE], 
-            &sample_history.data[0], 
-            TAP_COUNT * sizeof(int32_t));
-  }
-}
+```{literalinclude} ../src/part3A/part3A.c
+---
+language: C
+start-after: +filter_task
+end-before: -filter_task
+---
 ```
 
 Here `filter_task()` does basically the same thing as in previous stages, only
@@ -101,45 +57,12 @@ Notice that pointers to the exponent and headroom are also passed along to each 
 
 ### **Part 3A** `filter_frame()` Implementation
 
-From [`part3A.c`](TODO):
-```c
-// Calculate entire output frame
-void filter_frame(
-    int32_t frame_out[FRAME_SIZE],
-    exponent_t* frame_out_exp,
-    headroom_t* frame_out_hr,
-    const int32_t history_in[HISTORY_SIZE],
-    const exponent_t history_in_exp,
-    const headroom_t history_in_hr)
-{
-  // log2() of max product of two signed 32-bit integers
-  //  = log2(INT32_MIN * INT32_MIN) = log2(-2^31 * -2^31)
-  const exponent_t INT32_SQUARE_MAX_LOG2 = 62;
-
-  // log2(TAP_COUNT)
-  const exponent_t TAP_COUNT_LOG2 = 10;
-
-  // First, determine the output exponent to be used.
-  const headroom_t total_hr = history_in_hr + filter_bfp.hr;
-  const exponent_t acc_exp = history_in_exp + filter_bfp.exp;
-  const exponent_t result_scale = INT32_SQUARE_MAX_LOG2 - total_hr 
-                                + TAP_COUNT_LOG2;
-  const exponent_t desired_scale = 31;
-  const right_shift_t acc_shr = result_scale - desired_scale;
-
-  *frame_out_exp = acc_exp + acc_shr;
-
-  // Now, compute the output sample values using that exponent.
-  for(int s = 0; s < FRAME_SIZE; s++){
-    timer_start(TIMING_SAMPLE);
-    frame_out[s] = filter_sample(&history_in[FRAME_SIZE-s-1], 
-                                  acc_shr);
-    timer_stop(TIMING_SAMPLE);
-  }
-
-  //Finally, calculate the headroom of the output frame.
-  *frame_out_hr = calc_headroom(frame_out, FRAME_SIZE);
-}
+```{literalinclude} ../src/part3A/part3A.c
+---
+language: C
+start-after: +filter_frame
+end-before: -filter_frame
+---
 ```
 
 `filter_frame()` in this stage must do several things. `frame_out[]`, the output
@@ -197,56 +120,24 @@ Finally, the headroom of the output sample needs to be calculated, which we do w
 
 ### **Part 3A** `filter_sample()` Implementation
 
-From [`part3A.c`](TODO):
-```c
-//Apply the filter to produce a single output sample
-int32_t filter_sample(
-    const int32_t sample_history[TAP_COUNT],
-    const right_shift_t acc_shr)
-{
-  // The accumulator into which partial results are added.
-  int64_t acc = 0;
-
-  // Compute the inner product between the history and coefficient vectors.
-  for(int k = 0; k < TAP_COUNT; k++){
-    int64_t b = sample_history[k];
-    int64_t c = filter_bfp.data[k];
-    acc += (b * c);
-  }
-
-  return sat32(ashr64(acc, acc_shr));
-}
+```{literalinclude} ../src/part3A/part3A.c
+---
+language: C
+start-after: +filter_sample
+end-before: -filter_sample
+---
 ```
 
 `filter_sample()` looks familiar from **Part 2**. It is does the same thing as in **Part 2**, except that it takes `acc_shr` as a function parameter, instead of computing it based on the input, filter and output exponents.
 
 ### **Part 3A** `tx_frame()` Implementation
 
-From [`part3A.c`](TODO):
-```c
-// Send a frame of new audio data
-static inline 
-void tx_frame(
-    const chanend_t c_audio,
-    const int32_t frame_out[],
-    const exponent_t frame_out_exp,
-    const headroom_t frame_out_hr,
-    const unsigned frame_size)
-{
-  const exponent_t output_exp = -31;
-  
-  // The output channel is expecting PCM samples with a *fixed* exponent of
-  // output_exp, so we'll need to convert samples to use the correct exponent
-  // before sending.
-
-  const right_shift_t samp_shr = output_exp - frame_out_exp;  
-
-  for(int k = 0; k < frame_size; k++){
-    int32_t sample = frame_out[k];
-    sample = ashr32(sample, samp_shr);
-    chan_out_word(c_audio, sample);
-  }
-}
+```{literalinclude} ../src/part3A/part3A.c
+---
+language: C
+start-after: +tx_frame
+end-before: -tx_frame
+---
 ```
 
 `tx_frame()` also looks much like it did in previous stages, except that this time the exponent associated with `frame_out[]` when `tx_frame()` is called may not be the required output exponent, `-31`. So, `tx_frame()` must coerce the sample mantissas into the `Q1.31` fixed-point format before sending through the channel.
@@ -259,27 +150,12 @@ $$
 
 ### **Part 3A** `rx_frame()` Implementation
 
-From [`part3A.c`](TODO):
-```c
-// Accept a frame of new audio data 
-static inline 
-void rx_frame(
-    int32_t frame_in[FRAME_SIZE],
-    exponent_t* frame_in_exp,
-    headroom_t* frame_in_hr,
-    const chanend_t c_audio)
-{
-  // We happen to know a priori that samples coming in will have a fixed 
-  // exponent of input_exp, and there's no reason to change it, so we'll just
-  // use that.
-  *frame_in_exp = -31;
-
-  for(int k = 0; k < FRAME_SIZE; k++)
-    frame_in[k] = chan_in_word(c_audio);
-  
-  // Make sure the headroom is correct
-  calc_headroom(frame_in, FRAME_SIZE);
-}
+```{literalinclude} ../src/part3A/part3A.c
+---
+language: C
+start-after: +rx_frame
+end-before: -rx_frame
+---
 ```
 
 `rx_frame()` also looks similar to previous stages, except this time it has to
@@ -290,55 +166,12 @@ In our case we are receiving frames of PCM samples which all use the exponent
 
 ### **Part 3A** `rx_and_merge_frame()` Implementation
 
-From [`part3A.c`](TODO):
-```c
-// Accept a frame of new audio data and merge it into sample_history
-static inline 
-void rx_and_merge_frame(
-    int32_t sample_history[HISTORY_SIZE],
-    exponent_t* sample_history_exp,
-    headroom_t* sample_history_hr,
-    const chanend_t c_audio)
-{
-  // BFP vector into which new frame will be placed.
-  struct {
-    int32_t data[FRAME_SIZE];   // Sample data
-    exponent_t exp;             // Exponent
-    headroom_t hr;              // Headroom
-  } frame_in = {{0},0,0};
-
-  // Accept a new input frame
-  rx_frame(frame_in.data, 
-           &frame_in.exp, 
-           &frame_in.hr, 
-           c_audio);
-
-  // Rescale BFP vectors if needed so they can be merged
-  const exponent_t min_frame_in_exp = frame_in.exp - frame_in.hr;
-  const exponent_t min_history_exp = *sample_history_exp - *sample_history_hr;
-  const exponent_t new_exp = MAX(min_frame_in_exp, min_history_exp);
-
-  const right_shift_t hist_shr = new_exp - *sample_history_exp;
-  const right_shift_t frame_in_shr = new_exp - frame_in.exp;
-
-  if(hist_shr) {
-    for(int k = FRAME_SIZE; k < HISTORY_SIZE; k++)
-      sample_history[k] = ashr32(sample_history[k], hist_shr);
-    *sample_history_exp = new_exp;
-  }
-
-  if(frame_in_shr){
-    for(int k = 0; k < FRAME_SIZE; k++)
-      frame_in.data[k] = ashr32(frame_in.data[k], frame_in_shr);
-  }
-  
-  // Now we can merge the new frame in (reversing order)
-  for(int k = 0; k < FRAME_SIZE; k++)
-    sample_history[FRAME_SIZE-k-1] = frame_in.data[k];
-
-  // And just ensure the headroom is correct
-  *sample_history_hr = calc_headroom(sample_history, HISTORY_SIZE);
-}
+```{literalinclude} ../src/part3A/part3A.c
+---
+language: C
+start-after: +rx_and_merge_frame
+end-before: -rx_and_merge_frame
+---
 ```
 
 `rx_and_merge_frame()` does something a bit complicated. First it declares a new
@@ -358,23 +191,25 @@ portions of the sample history using different exponents, which we can't allow.
 
 To deal with this, we need to coerce both vectors into using the same exponent.
 
-> **Note**: that this is also always the case when _adding_ or _subtracting_ the
-> mantissas of BFP vectors. It does not make arithmetic sense to add mantissas
-> with different exponents. To see why, let's look at a simple example.
->
-> We have two 16-bit mantissas, $\mathtt{x} = 10234$ and $\mathtt{y} = 22243$
-> associated with exponents $\hat{x} = -14$ and $\hat{y} = -12$. Recall that the
-> negative of the exponent is also the number of fractional bits. So, we can
-> rewrite $\mathtt{x}$ and $\mathtt{y}$ in binary with the appropriate radix and
-> try to add them:
->    
->       x = 0 0.1 0 0 1 1 1 1 1 1 1 1 0 1 0 
->     + y = 0 1 0 1.0 1 1 0 1 1 1 0 0 0 1 1 
->     --------------------------------------
->           0 1 1 1 1 1 1 0 1 1 0 1 1 1 0 1 ??
->
-> But where would we even put the radix? To add them, they must be _aligned_ on
-> their radix point, which means using the same exponent.
+```{note} 
+This is also always the case when _adding_ or _subtracting_ the mantissas of BFP
+vectors. It does not make arithmetic sense to add mantissas with different
+exponents. To see why, let's look at a simple example.
+
+We have two 16-bit mantissas, $\mathtt{x} = 10234$ and $\mathtt{y} = 22243$
+associated with exponents $\hat{x} = -14$ and $\hat{y} = -12$. Recall that the
+negative of the exponent is also the number of fractional bits. So, we can
+rewrite $\mathtt{x}$ and $\mathtt{y}$ in binary with the appropriate radix and
+try to add them:
+   
+      x = 0 0.1 0 0 1 1 1 1 1 1 1 1 0 1 0 
+    + y = 0 1 0 1.0 1 1 0 1 1 1 0 0 0 1 1 
+    --------------------------------------
+          0 1 1 1 1 1 1 0 1 1 0 1 1 1 0 1 ??
+
+But where would we even put the radix? To add them, they must be _aligned_ on
+their radix point, which means using the same exponent.
+```
 
 Deciding which new exponent to use is a matter of determining the maximum
 minimum exponent among the vectors. Let me explain.
@@ -393,15 +228,20 @@ of the vector with those of the other, then we can take the _maximum_ of
 $\hat{x^*}$ and $\hat{y^*}$ as the new exponent that both can be coerced to
 without overflows.
 
-> **Note**: While we are guaranteed $\hat{x^*}$ can be used for $\bar{x}$
-> without any quantization error, applying $\hat{x^*}$ to $\bar{y}$ (or vice
-> versa) _may_ involve quantization error.
+```{note} 
+While we are guaranteed $\hat{x^*}$ can be used for $\bar{x}$ without any
+quantization error, applying $\hat{x^*}$ to $\bar{y}$ (or vice versa) _may_
+involve quantization error.
+```
 
-> **Note**: This isn't perfect. In our case we're replacing the first `FRAME_SIZE` samples of `sample_history[]` with
-> the values from `frame_in.data[]`. If the largest values of `sample_history[]` were in the first `FRAME_SIZE`
-> samples,`sample_history_hr` may underestimate the headroom available. However, because of the way headroom works,
-> *under*estimates of headroom are always safe, though they may result in more quantization error than is strictly
-> necessary.
+```{note} 
+This isn't perfect. In our case we're replacing the first `FRAME_SIZE` samples
+of `sample_history[]` with the values from `frame_in.data[]`. If the largest
+values of `sample_history[]` were in the first `FRAME_SIZE`
+samples,`sample_history_hr` may underestimate the headroom available. However,
+because of the way headroom works, *under*estimates of headroom are always safe,
+though they may result in more quantization error than is strictly necessary.
+```
 
 Once a new exponent is selected for the sample history, shift values are
 calculated for each vector (in the usual way: desired_exponent -

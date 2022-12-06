@@ -13,6 +13,7 @@ struct {
 } filter_bfp = {(int32_t*) &filter_coef[0], -30, 10};
 
 
+//// +calc_headroom
 // Compute headroom of int32 vector.
 static inline
 headroom_t calc_headroom(
@@ -21,7 +22,10 @@ headroom_t calc_headroom(
 {
   return vect_s32_headroom(vec, length);
 }
+//// -calc_headroom
 
+
+//// +rx_frame
 // Accept a frame of new audio data 
 static inline 
 void rx_frame(
@@ -43,8 +47,10 @@ void rx_frame(
   // Make sure the headroom is correct
   calc_headroom(frame_in, FRAME_SIZE);
 }
+//// -rx_frame
 
 
+//// +rx_and_merge_frame
 // Accept a frame of new audio data and merge it into sample_history
 static inline 
 void rx_and_merge_frame(
@@ -96,8 +102,10 @@ void rx_and_merge_frame(
   // And just ensure the headroom is correct
   *sample_history_hr = calc_headroom(sample_history, HISTORY_SIZE);
 }
+//// -rx_and_merge_frame
 
 
+//// +tx_frame
 // Send a frame of new audio data
 static inline 
 void tx_frame(
@@ -123,8 +131,10 @@ void tx_frame(
     chan_out_word(c_audio, sample);
   }
 }
+//// -tx_frame
 
 
+//// +filter_sample
 // Apply the filter to produce a single output sample.
 int64_t filter_sample(
     const int32_t sample_history[TAP_COUNT],
@@ -136,7 +146,10 @@ int64_t filter_sample(
                       &filter_bfp.data[0], TAP_COUNT,
                       b_shr, c_shr);
 }
+//// -filter_sample
 
+
+//// +filter_frame
 // Calculate entire output frame
 // Defined in stage9.xc
 void filter_frame(
@@ -146,7 +159,10 @@ void filter_frame(
     const int32_t history_in[HISTORY_SIZE],
     const exponent_t history_in_exp,
     const headroom_t history_in_hr);
+//// -filter_frame
 
+
+//// +filter_task
 /**
  * This is the thread entry point for the hardware thread which will actually 
  * be applying the FIR filter.
@@ -201,3 +217,4 @@ void filter_task(
              FRAME_SIZE);
   }
 }
+//// -filter_task

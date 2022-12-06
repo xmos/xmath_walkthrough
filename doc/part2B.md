@@ -1,6 +1,4 @@
 
-[Prev](part2A.md) | [Home](intro.md) | [Next](part2C.md)
-
 # Part 2B
 
 Like [**Part 2A**](part2A.md), **Part 2B** implements the FIR filter
@@ -17,9 +15,9 @@ implementations of functions written in C.
 
 In **Part 2B**, instead of implementing the logic in a plain C loop, we use a
 function written in dual-issue assembly to compute the inner product for us.
-That function, [`int32_dot()`](TODO), does not use the VPU (we'll use the VPU in
-the next stage), but is meant to demonstrate the improved performance we get
-just from using a dual-issue function written directly in assembly.
+That function, `int32_dot()`, does not use the VPU (we'll use the VPU in the
+next stage), but is meant to demonstrate the improved performance we get just
+from using a dual-issue function written directly in assembly.
 
 ## Implementation
 
@@ -28,44 +26,22 @@ those in **Part 2A**.
 
 ### **Part 2B** `filter_sample()` Implementation
 
-From [`part2B.c`](TODO):
-```C
-//Apply the filter to produce a single output sample
-q1_31 filter_sample(
-    const q1_31 sample_history[TAP_COUNT])
-{
-  // The exponent associatd with the filter coefficients
-  const exponent_t coef_exp = -28;
-  // The exponent associated with the input signal
-  const exponent_t input_exp = -31;
-  // The exponent associated with the output signal
-  const exponent_t output_exp = input_exp;
-  // The exponent associated with the accumulator
-  const exponent_t acc_exp = input_exp + coef_exp;
-  // The arithmetic right-shift applied to the filter's accumulator to achieve the
-  // correct output exponent
-  const right_shift_t acc_shr = output_exp - acc_exp;
-
-  // Compute the 64-bit inner product between the sample history and the filter
-  // coefficients
-  int64_t acc = int32_dot(&sample_history[0], 
-                          &filter_coef[0], 
-                          TAP_COUNT);
-
-  // Apply a right-shift, dropping the bit-depth back down to 32 bits
-  return ashr64(acc, 
-                acc_shr);
-}
+```{literalinclude} ../src/part2B/part2B.c
+---
+language: C
+start-after: +filter_sample
+end-before: -filter_sample
+---
 ```
 
 Notice that the only difference compared to **Part 2A** is that instead of a loop it is calling `int32_dot()`.
 
-From [`part2B.c`](TODO):
-```C
-int64_t int32_dot(
-    const int32_t x[],
-    const int32_t y[],
-    const unsigned length);
+```{literalinclude} ../src/part2B/part2B.c
+---
+language: C
+start-after: +int32_dot
+end-before: -int32_dot
+---
 ```
 
 `int32_dot()` takes two `int32_t` arrays of length `length` and computes a

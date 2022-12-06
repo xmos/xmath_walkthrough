@@ -8,6 +8,7 @@ extern
 const q4_28 filter_coef[TAP_COUNT];
 
 
+//// +rx_frame
 // Accept a frame of new audio data 
 static inline 
 void rx_frame(
@@ -19,8 +20,10 @@ void rx_frame(
 
   timer_start(TIMING_FRAME);
 }
+//// -rx_frame
 
 
+//// +tx_frame
 // Send a frame of new audio data
 static inline 
 void tx_frame(
@@ -32,8 +35,10 @@ void tx_frame(
   for(int k = 0; k < FRAME_SIZE; k++)
     chan_out_word(c_audio, buff[k]);
 }
+//// -tx_frame
 
 
+//// +filter_sample
 //Apply the filter to produce a single output sample
 q1_31 filter_sample(
     const q1_31 sample_history[TAP_COUNT])
@@ -64,8 +69,10 @@ q1_31 filter_sample(
   return sat32(ashr64(acc, 
                      acc_shr));
 }
+//// -filter_sample
 
 
+//// +filter_task
 /**
  * This is the thread entry point for the hardware thread which will actually 
  * be applying the FIR filter.
@@ -105,3 +112,4 @@ void filter_task(
              &frame_output[0]);
   }
 }
+//// -filter_task

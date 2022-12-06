@@ -1,6 +1,4 @@
 
-[Prev](partD.md) | [Home](intro.md) | [Next](part4B.md)
-
 # Part 4A
 
 Up to this point, all previous stages do all of their filter computation in a
@@ -17,12 +15,12 @@ this, the lower level API is required.
 
 ### From `lib_xcore_math`
 
-This stage makes use of the following operations from `lib_xcore_math`:
+This page references the following operations from `lib_xcore_math`:
 
-* [`vect_s32_headroom()`](TODO)
-* [`vect_s32_dot()`](TODO)
-* [`vect_s32_dot_prepare()`](TODO)
-* [`vect_s32_shr()`](TODO)
+* [`vect_s32_headroom()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32.h#L554-L591)
+* [`vect_s32_dot()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32.h#L399-L480)
+* [`vect_s32_dot_prepare()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32_prepare.h#L182-L252)
+* [`vect_s32_shr()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32.h#L1200-L1239)
 
 ## Implementation
 
@@ -32,46 +30,12 @@ In fact, in **Part 4A**, the only function which is implemented differently than
 
 ### **Part 4A** `filter_frame()` Implementation
 
-From [`stage9.xc`](TODO):
-```C
-// Calculate entire output frame
-void filter_frame(
-    int32_t* unsafe frame_out,
-    exponent_t* frame_out_exp,
-    headroom_t* frame_out_hr,
-    const int32_t history_in[HISTORY_SIZE],
-    const exponent_t history_in_exp,
-    const headroom_t history_in_hr)
-{
-  // First, determine output exponent and required shifts.
-  right_shift_t b_shr, c_shr;
-  vect_s32_dot_prepare(frame_out_exp, &b_shr, &c_shr, 
-                       history_in_exp, filter_bfp.exp,
-                       history_in_hr, filter_bfp.hr, 
-                       TAP_COUNT);
-  // vect_s32_dot_prepare() ensures the result doesn't overflow the 40-bit VPU
-  // accumulators, but we need it in a 32-bit value.
-  right_shift_t s_shr = 8;
-  *frame_out_exp += s_shr;
-
-  // Compute FRAME_SIZE output samples.
-  for(int s = 0; s < FRAME_SIZE; s+=THREADS){
-    timer_start(TIMING_SAMPLE);
-    par(int tid = 0; tid < THREADS; tid++) {
-      //Code inside here happens concurrently in 4 threads
-      frame_out[s+tid] = sat32(
-        ashr64(filter_sample(
-                &history_in[FRAME_SIZE-(s+tid)-1], 
-                b_shr, 
-                c_shr), 
-          s_shr));
-    }
-    timer_stop(TIMING_SAMPLE);
-  }
-
-  //Finally, calculate the headroom of the output frame.
-  *frame_out_hr = vect_s32_headroom((int32_t*)frame_out, FRAME_SIZE);
-}
+```{literalinclude} ../src/part4A/part4A.c
+---
+language: C
+start-after: +filter_frame
+end-before: -filter_frame
+---
 ```
 
 The internals of **Part 4A**'s `filter_frame()` also closely match that of
@@ -105,7 +69,9 @@ this would have bungled our performance information.
 
 ## Results
 
-> **NOTE**:  The sample timing info below is per FOUR samples
+```{note} 
+The sample timing info below is per FOUR samples
+```
 
 ### Timing
 

@@ -1,6 +1,4 @@
 
-[Prev](part1A.md) | [Home](intro.md) | [Next](part1C.md)
-
 # Part 1B
 
 Like [**Part 1A**](part1A.md), **Part 1B** implements the FIR filter using
@@ -27,20 +25,14 @@ of `float` values.
 Because **Part 1B** is so similar to **Part 1A**, implementations for
 `filter_task()`, `rx_frame()` and `tx_frame()` won't be shown here.
 
-### Stage 1 `filter_sample()` Implementation
+### Part 1B `filter_sample()` Implementation
 
-From [`part1B.c`](TODO):
-```c
-//Apply the filter to produce a single output sample
-float filter_sample(
-    const float sample_history[TAP_COUNT])
-{
-  // Compute the inner product of sample_history[] and filter_coef[]
-  float acc = 0.0;
-  for(int k = 0; k < TAP_COUNT; k++)
-    acc += sample_history[k] * filter_coef[k];
-  return acc;
-}
+```{literalinclude} ../src/part1B/part1B.c
+---
+language: C
+start-after: +filter_sample
+end-before: -filter_sample
+---
 ```
 
 Here we see `filter_sample()` in **Part 1B** is identical to that in **Part

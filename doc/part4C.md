@@ -1,6 +1,4 @@
 
-[Prev](part4B.md) | [Home](intro.md) | [Next](perf.md)
-
 # Part 4C
 
 In [**Part 4B**](part4B.md), `lib_xcore_math`'s digital filter API was used to
@@ -72,48 +70,12 @@ files are intended to be opaque, but are simple, so feel free to take a look.
 
 ### **Part 4B** `filter_task()` Implementation
 
-From [`part4C.c`](TODO):
-```C
-/**
- * This is the thread entry point for the hardware thread which will actually 
- * be applying the FIR filter.
- * 
- * `c_audio` is the channel over which PCM audio data is exchanged with tile[0].
- */
-void filter_task(
-    chanend_t c_audio)
-{
-  // This buffer is where input/output samples will be placed.
-  int32_t sample_buffer[FRAME_SIZE] = {0};
-
-  // Initialize userFilter. userFilter allocates and manages its own buffers and
-  // filter object, so no buffer needs to be supplied.
-  userFilter_init();
-  
-  // If userFilter_exp_diff is not 0, the results will be wrong.
-  assert(userFilter_exp_diff == 0);
-
-  // Loop forever
-  while(1) {
-
-    // Read in a new frame
-    rx_frame(&sample_buffer[0], 
-             c_audio);
-    
-    // Compute FRAME_SIZE output samples.
-    for(int s = 0; s < FRAME_SIZE; s++){
-      timer_start(TIMING_SAMPLE);
-      // userFilter() is the generated function to add a new input sample and get
-      // back the filtered result.
-      sample_buffer[s] = userFilter(sample_buffer[s]);
-      timer_stop(TIMING_SAMPLE);
-    }
-
-    // Send out the processed frame
-    tx_frame(c_audio, 
-             &sample_buffer[0]);
-  }
-}
+```{literalinclude} ../src/part4C/part4C.c
+---
+language: C
+start-after: +filter_task
+end-before: -filter_task
+---
 ```
 
 We can see that this is just a simpler version of `filter_task()` from **Stage

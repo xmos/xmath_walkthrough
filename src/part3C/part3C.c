@@ -8,7 +8,7 @@ const q2_30 filter_coef[TAP_COUNT];
 // Block floating-point vector representing the filter coefficients.
 bfp_s32_t bfp_filter_coef;
 
-
+//// +calc_headroom 
 // Compute headroom of int32 vector.
 static inline
 headroom_t calc_headroom(
@@ -16,8 +16,10 @@ headroom_t calc_headroom(
 {
   return bfp_s32_headroom(vec);
 }
+//// -calc_headroom
 
 
+//// +rx_frame
 static inline 
 void rx_frame(
     bfp_s32_t* frame_in,
@@ -36,8 +38,10 @@ void rx_frame(
   // Make sure the headroom is correct
   calc_headroom(frame_in);
 }
+//// -rx_frame
 
 
+//// +rx_and_merge_frame
 // Accept a frame of new audio data and merge it into sample history
 static inline 
 void rx_and_merge_frame(
@@ -67,8 +71,10 @@ void rx_and_merge_frame(
   // And just ensure the headroom is correct
   calc_headroom(sample_history);
 }
+//// -rx_and_merge_frame
 
 
+//// +tx_frame
 // Send a frame of new audio data
 static inline 
 void tx_frame(
@@ -89,8 +95,10 @@ void tx_frame(
     chan_out_word(c_audio, frame_out->data[k]);
   
 }
+//// -tx_frame
 
 
+//// +filter_sample
 /**
  * Apply the filter to produce a single output sample.
  * 
@@ -103,8 +111,10 @@ float_s64_t filter_sample(
   // Compute the dot product
   return bfp_s32_dot(sample_history, &bfp_filter_coef);
 }
+//// -filter_sample
 
 
+//// +filter_frame
 // Calculate entire output frame
 void filter_frame(
     bfp_s32_t* frame_out,
@@ -140,7 +150,10 @@ void filter_frame(
     timer_stop(TIMING_SAMPLE);
   }
 }
+//// -filter_frame
 
+
+//// +filter_task
 /**
  * This is the thread entry point for the hardware thread which will actually 
  * be applying the FIR filter.
@@ -189,3 +202,4 @@ void filter_task(
              &frame_output);
   }
 }
+//// -filter_task

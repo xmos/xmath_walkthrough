@@ -1,6 +1,4 @@
 
-[Prev](part4C.md) | [Home](intro.md) | Next
-
 # Performance Info
 
 The following table gives the measured timing from each stage. If you've run the
@@ -18,6 +16,12 @@ output sample.
 **Sample Time** divided by 1024, the number of filter taps.
 
 
+```{note}
+The **Part 4A** Sample Time and Tap Time have been divided by 4 in the
+following. The parallel implementation of **Part 4A** meant that the measured
+sample times were actually for 4 output samples instead of 1.
+```
+
 | Stage   | Frame Time    | Sample Time   | Tap Time
 |---------|---------------|---------------|--------------
 | Part 1A | 647432.896 us |   2528.725 us |   2469.460 ns
@@ -34,7 +38,8 @@ output sample.
 | Part 4C |   1311.088 us |      4.921 us |      4.810 ns
 
 
-The following bar charts show the timing info for each stage, except **Part 1A** (because it would obscure the rest of the stages otherwise).
+The following bar charts show the timing info for each stage, except **Part 1A**
+(because it would obscure the rest of the stages otherwise).
 
 ### Frame Times 
 

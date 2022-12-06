@@ -1,6 +1,4 @@
 
-[Prev](stage4.md) | [Home](intro.md) | [Next](partC.md)
-
 # Part 2C
 
 Like [**Part 2B**](stage4.md), **Part 2C** implements the FIR filter
@@ -23,7 +21,8 @@ We'll see that using the VPU gives us a significant speed-up.
 
 This stage makes use of the following operations from `lib_xcore_math`:
 
-* [`vect_s32_dot()`](TODO)
+* [`vect_s32_dot()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32.h#L399-L480)
+* [`vect_s32_mul()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32.h#L828-L880)
 
 ## Implementation
 
@@ -32,37 +31,12 @@ those in **Part 2A** and **Part 2B**.
 
 ### **Part 2C** `filter_sample()` Implementation
 
-From [`part2C.c`](TODO):
-```C
-//Apply the filter to produce a single output sample
-q1_31 filter_sample(
-    const q1_31 sample_history[TAP_COUNT])
-{
-  // The exponent associatd with the filter coefficients
-  const exponent_t coef_exp = -28;
-  // The exponent associated with the input signal
-  const exponent_t input_exp = -31;
-  // The exponent associated with the output signal
-  const exponent_t output_exp = input_exp;
-  // The exponent associated with the accumulator
-  const exponent_t acc_exp = input_exp + coef_exp + 30;
-  // The arithmetic right-shift applied to the filter's accumulator to achieve the
-  // correct output exponent
-  const right_shift_t acc_shr = output_exp - acc_exp;
-
-  // Compute the 64-bit inner product between the sample history and the filter
-  // coefficients using an optimized function from lib_xcore_math.
-  int64_t acc = vect_s32_dot(&sample_history[0], 
-                             &filter_coef[0], 
-                             TAP_COUNT, 
-                             0, 
-                             0);
-
-  // Apply a right-shift, dropping the bit-depth back down to 32 bits
-  return ashr64(acc, 
-                acc_shr);
-}
-}
+```{literalinclude} ../src/part2C/part2C.c
+---
+language: C
+start-after: +filter_sample
+end-before: -filter_sample
+---
 ```
 
 `vect_s32_dot()` differs from `int32_dot()` in an important way that we need to
@@ -92,12 +66,14 @@ $$
     \right)}
 $$
 
-> **Note**: In the `lib_xcore_math` documentation, the _output_ of an operation
-> is typically given the variable $a$, whereas $b$ and $c$ are usually used for
-> the inputs to the operation. The $a$ above should be thought of as the return
-> value. Some library functions, such as [`vect_s32_mul()`](TODO) output
-> vectors, and so must output it through an argument rather than returning it.
-> $a$ is still considered the output in those cases.
+```{note} 
+In the `lib_xcore_math` documentation, the _output_ of an operation is typically
+given the variable $a$, whereas $b$ and $c$ are usually used for the inputs to
+the operation. The $a$ above should be thought of as the return value. Some
+library functions, such as `vect_s32_mul() output vectors, and so must output it
+through an argument rather than returning it. $a$ is still considered the output
+in those cases.
+```
 
 The XS3 VPU always applies a 30-bit right-shift to the product of 32-bit
 multiplies, which introduces the $2^{-30}$ factor. The `b_shr` and `c_shr`

@@ -1,6 +1,4 @@
 
-[Prev](part1.md) | [Home](intro.md) | [Next](part1B.md)
-
 # Part 1A
 
 **Part 1A** is our first implementation of the digital FIR filter. Much of the
@@ -35,47 +33,12 @@ The code specific to **Part 1A** is found in [`part1A.c`](TODO).
 
 ### Part 1A `filter_task()` Implementation
 
-From [`part1A.c`](TODO):
-```c
-/**
- * This is the thread entry-point for the hardware thread which will actually 
- * be applying the FIR filter.
- * 
- * `c_audio` is the channel over which PCM audio data is exchanged with tile[0].
- */
-void filter_task(
-    chanend_t c_audio)
-{
-  // History of received input samples, stored in reverse-chronological order
-  double sample_history[HISTORY_SIZE] = {0};
-
-  // Buffer used to hold output samples
-  double frame_output[FRAME_SIZE] = {0};
-
-  // Loop forever
-  while(1) {
-
-    // Read in a new frame
-    rx_frame(&sample_history[0], 
-             c_audio);
-
-    // Calc output frame
-    for(int s = 0; s < FRAME_SIZE; s++){
-      timer_start(TIMING_SAMPLE);
-      frame_output[s] = filter_sample(&sample_history[FRAME_SIZE-s-1]);
-      timer_stop(TIMING_SAMPLE);
-    }
-
-    // Make room for new samples at the front of the vector
-    memmove(&sample_history[FRAME_SIZE], 
-            &sample_history[0], 
-            TAP_COUNT * sizeof(double));
-
-    // Send out the processed frame
-    tx_frame(c_audio, 
-             &frame_output[0]);
-  }
-}
+```{literalinclude} ../src/part1A/part1A.c
+---
+language: C
+start-after: +filter_task
+end-before: -filter_task
+---
 ```
 
 This is the filtering thread's entry-point. After initialization this function
@@ -113,18 +76,12 @@ Finally, the output frame is sent to `tile[0]` and it repeats the loop.
 
 ### Part 1A `filter_sample()` Implementation
 
-From [`part1A.c`](TODO):
-```c
-//Apply the filter to produce a single output sample
-double filter_sample(
-    const double sample_history[TAP_COUNT])
-{
-  // Compute the inner product of sample_history[] and filter_coef[]
-  double acc = 0.0;
-  for(int k = 0; k < TAP_COUNT; k++)
-    acc += sample_history[k] * filter_coef[k];
-  return acc;
-}
+```{literalinclude} ../src/part1A/part1A.c
+---
+language: C
+start-after: +filter_sample
+end-before: -filter_sample
+---
 ```
 
 `filter_sample()` is the function where individual output sample values are
@@ -149,31 +106,14 @@ $\frac{1}{1024} = 0.0009765625$.
 const double filter_coef[TAP_COUNT] = { ... };
 ```
 
-### Stage 0 `rx_frame()` Implementation
+### Part 1A `rx_frame()` Implementation
 
-From [`part1A.c`](TODO):
-```c
-// Accept a frame of new audio data 
-static inline 
-void rx_frame(
-    double buff[],
-    const chanend_t c_audio)
-{    
-  // The exponent associated with the input samples
-  const exponent_t input_exp = -31;
-
-  for(int k = 0; k < FRAME_SIZE; k++){
-    // Read PCM sample from channel
-    const int32_t sample_in = (int32_t) chan_in_word(c_audio);
-    // Convert PCM sample to floating-point
-    const double samp_f = ldexp(sample_in, input_exp);
-    // Place at beginning of history buffer in reverse order (to match the
-    // order of filter coefficients).
-    buff[FRAME_SIZE-k-1] = samp_f;
-  }
-
-  timer_start(TIMING_FRAME);
-}
+```{literalinclude} ../src/part1A/part1A.c
+---
+language: C
+start-after: +rx_frame
+end-before: -rx_frame
+---
 ```
 
 `rx_frame()` accepts a frame of audio data over a channel. Note that to
@@ -186,32 +126,14 @@ into `double` values as we receive them.
 reverse chronological order, as is expected by `filter_sample()`.
 
 
-### Stage 0 `tx_frame()` Implementation
+### Part 1A `tx_frame()` Implementation
 
-
-From [`part1A.c`](TODO):
-```c
-// Send a frame of new audio data
-static inline 
-void tx_frame(
-    const chanend_t c_audio,
-    const double buff[])
-{    
-  // The exponent associated with the output samples
-  const exponent_t output_exp = -31;
-
-  timer_stop(TIMING_FRAME);
-
-  // Send FRAME_SIZE new output samples at the end of each frame.
-  for(int k = 0; k < FRAME_SIZE; k++){
-    // Get double sample from frame output buffer (in forward order)
-    const double samp_f = buff[k];
-    // Convert double sample back to PCM using the output exponent.
-    const q1_31 sample_out = round(ldexp(samp_f, -output_exp));
-    // Put PCM sample in output channel
-    chan_out_word(c_audio, sample_out);
-  }
-}
+```{literalinclude} ../src/part1A/part1A.c
+---
+language: C
+start-after: +tx_frame
+end-before: -tx_frame
+---
 ```
 
 `tx_frame()` mirrors `rx_frame()`. It takes in a frame's worth of

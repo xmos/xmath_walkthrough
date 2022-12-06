@@ -1,45 +1,41 @@
 
-[Prev](part3B.md) | [Home](intro.md) | [Next](PartD.md)
-
-# Stage 8
+# Part 3C
 
 In **Part 3C** we finally use `lib_xcore_math`'s block floating-point (BFP) API.
 
 Here we don't expect any particularly noticeable performance boost relative to
-[**Part 3B**](part3B.md.md)'s implementation. At bottom, both stages
-ultimately use the same function (`vect_s32_dot()`) to do the bulk of the work
-computing the filter output. Instead, in this stage we will see how using the
-`lib_xcore_math` BFP API can simplify our code by doing much of the book-keeping
-for us.
+[**Part 3B**](part3B.md)'s implementation. At bottom, both stages ultimately use
+the same function (`vect_s32_dot()`) to do the bulk of the work computing the
+filter output. Instead, in this stage we will see how using the `lib_xcore_math`
+BFP API can simplify our code by doing much of the book-keeping for us.
 
 That being said, this is not the ideal application of BFP arithmetic,
 particularly because of our application's requirement for fixed-point output
-samples. We'll see a somewhat more intrinsically BFP implementation when we get
-to [**Stage 12**](stage12.md).
+samples.
 
-### From `lib_xcore_math`
+## From `lib_xcore_math`
 
-This stage makes use of the following operations from `lib_xcore_math`:
+This page references the following operations from `lib_xcore_math`:
 
-* [`bfp_s32_init()`](TODO)
-* [`bfp_s32_headroom()`](TODO)
-* [`bfp_s32_use_exponent()`](TODO)
-* [`vect_s32_dot_prepare()`](TODO)
+* [`bfp_s32_init()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L17-L45)
+* [`bfp_s32_headroom()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32.h#L554-L591)
+* [`bfp_s32_dot()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L498-L522)
+* [`bfp_s32_use_exponent()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L134-L187)
+* [`vect_s32_dot_prepare()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32_prepare.h#L182-L252)
+* [`bfp_s32_convolve_valid()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L953-L996)
+* [`bfp_s32_convolve_same()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/bfp/bfp_s32.h#L999-L1052)
 
 
 ## Implementation
 
 ### **Part 3C** `calc_headroom()` Implementation
 
-From [`part3C.c`](TODO):
-```c
-// Compute headroom of int32 vector.
-static inline
-headroom_t calc_headroom(
-    bfp_s32_t* vec)
-{
-  return bfp_s32_headroom(vec);
-}
+```{literalinclude} ../src/part3C/part3C.c
+---
+language: C
+start-after: +calc_headroom
+end-before: -calc_headroom
+---
 ```
 
 In this stage `calc_headroom()` just calls the `bfp_s32_headroom()` operation on
@@ -50,56 +46,12 @@ value is not needed and not used.
 
 ### **Part 3C** `filter_task()` Implementation
 
-From [`part3C.c`](TODO):
-```c
-/**
- * This is the thread entry point for the hardware thread which will actually 
- * be applying the FIR filter.
- * 
- * `c_audio` is the channel over which PCM audio data is exchanged with tile[0].
- */
-void filter_task(
-    chanend_t c_audio)
-{
-
-  // Initialize BFP vector representing filter coefficients
-  const exponent_t coef_exp = -30;
-  bfp_s32_init(&bfp_filter_coef, (int32_t*) &filter_coef[0], 
-               coef_exp, TAP_COUNT, 1);
-
-  // Represents the sample history as a BFP vector
-  int32_t sample_history_buff[HISTORY_SIZE] = {0};
-  bfp_s32_t sample_history;
-  bfp_s32_init(&sample_history, &sample_history_buff[0], -200, 
-               HISTORY_SIZE, 0);
-
-  // Represents output frame as a BFP vector
-  int32_t frame_output_buff[FRAME_SIZE] = {0};
-  bfp_s32_t frame_output;
-  bfp_s32_init(&frame_output, &frame_output_buff[0], 0, 
-               FRAME_SIZE, 0);
-
-  // Loop forever
-  while(1) {
-
-    // Read in a new frame
-    rx_and_merge_frame(&sample_history, 
-                       c_audio);
-
-    // Calc output frame
-    filter_frame(&frame_output, 
-                 &sample_history);
-
-    // Send out the processed frame
-    tx_frame(c_audio,
-             &frame_output);
-
-    // Make room for new samples at the front of the vector.
-    memmove(&sample_history.data[FRAME_SIZE], 
-            &sample_history.data[0], 
-            TAP_COUNT * sizeof(int32_t));
-  }
-}
+```{literalinclude} ../src/part3C/part3C.c
+---
+language: C
+start-after: +filter_task
+end-before: -filter_task
+---
 ```
 
 In **Part 3C** `filter_task()` is quite similar to that in the previous two
@@ -121,55 +73,24 @@ initial values.
 
 ### **Part 3C** `filter_frame()` Implementation
 
-From [`part3C.c`](TODO):
-```c
-// Calculate entire output frame
-void filter_frame(
-    bfp_s32_t* frame_out,
-    const bfp_s32_t* sample_history)
-{ 
-  // Initialize a new BFP vector which is a 'view' onto a TAP_COUNT-element
-  // window of the sample_history[] vector. The history_view[] window will
-  // 'slide' along sample_history[] for each output sample. This isn't something
-  // you'd typically need to do.
-  bfp_s32_t history_view;
-  bfp_s32_init(&history_view, &sample_history->data[FRAME_SIZE],
-                sample_history->exp, TAP_COUNT, 0);
-  sample_history.hr = sample_history->hr; // Might not be precisely correct, but is safe
-
-  // Compute FRAME_SIZE output samples.
-  for(int s = 0; s < FRAME_SIZE; s++){
-    timer_start(TIMING_SAMPLE);
-    // Slide the window down one index, towards newer samples
-    history_view.data = history_view.data - 1;
-    // Get next output sample
-    float_s64_t samp = filter_sample(&history_view);
-
-    // Because the exponents and headroom are the same for every call to
-    // filter_sample(), the output exponent will also be the same (it's computed
-    // before the dot product is computed). So we'll use whichever exponent the 
-    // first result says to use... plus 8, just like in the previous stage, for
-    // the same reason (int40 -> int32)
-    if(!s)
-      frame_out->exp = samp.exp + 8;
-
-    frame_out->data[s] = float_s64_to_fixed(samp, 
-                                            frame_out->exp);
-    timer_stop(TIMING_SAMPLE);
-  }
-}
+```{literalinclude} ../src/part3C/part3C.c
+---
+language: C
+start-after: +filter_frame
+end-before: -filter_frame
+---
 ```
 
 `filter_frame()` in **Part 3C** is tricky. At bottom the issue here is that
 `lib_xcore_math`'s BFP API doesn't provide any convolution operations suitable
 for this scenario. There _are_ a pair of 32-bit BFP convolution functions,
-[`bfp_s32_convolve_valid()`](TODO) and [`bfp_s32_convolve_same()`](TODO),
+`bfp_s32_convolve_valid()` and `bfp_s32_convolve_same()`,
 however these are optimized for (and only support) small convolution kernels of
 `1`, `3`, `5` or `7` elements.
 
 In fact, BFP is probably _not_ the right approach for implementing an FIR filter
-using `lib_xcore_math` (we'll see better approaches in [**Stage
-10**](stage10.md) and [**Part 4C**](stage11.md)).
+using `lib_xcore_math` (we'll see better approaches in [**Part 4B**](part4B.md)
+and [**Part 4C**](part4C.md)).
 
 But in keeping with the spirit of this tutorial, this stage attempt to implement
 the filter using the BFP API as best possible.
@@ -210,34 +131,31 @@ mantissa. We need the result to fit in 32 bits, so we add 8 to the output
 exponent, and use `float_s64_to_fixed()` to shift samples before placing them in
 `frame_out`.
 
-> **Note**: To be clear, if you find yourself doing these things in an
-> actual application, you are probably better off reverting to the lower-level
-> Vector API. That doesn't mean getting rid of all `bfp_s32_t` in your
-> application or application component; it just means that within the function
-> that implements your operation, you may want to destructure the `bfp_s32_t`
-> and operate directly on its fields using the Vector API.
-> 
-> Additionally, if you're trying to use the BFP or Vector API to implement a
-> time-domain FIR or IIR filter, you may want to look at the [Digital Filter
-> API](TODO) instead.
+```{note} 
+To be clear, if you find yourself doing these things in an actual application,
+you are probably better off reverting to the lower-level Vector API. That
+doesn't mean getting rid of all `bfp_s32_t` in your application or application
+component; it just means that within the function that implements your
+operation, you may want to destructure the `bfp_s32_t` and operate directly on
+its fields using the Vector API.
+ 
+Additionally, if you're trying to use the BFP or Vector API to implement a
+time-domain FIR or IIR filter, you may want to look at the [Digital Filter
+API](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/filter.h)
+instead.
+```
+
 
 
 ### **Part 3C** `filter_sample()` Implementation
 
-From [`part3C.c`](TODO):
-```c
-/**
- * Apply the filter to produce a single output sample.
- * 
- * `sample_history[]` is a BFP vector representing the `TAP_COUNT` history
- * samples needed to compute the current output.
- */
-float_s64_t filter_sample(
-    const bfp_s32_t* sample_history)
-{
-  // Compute the dot product
-  return bfp_s32_dot(sample_history, &bfp_filter_coef);
-}
+
+```{literalinclude} ../src/part3C/part3C.c
+---
+language: C
+start-after: +filter_sample
+end-before: -filter_sample
+---
 ```
 
 `filter_sample()` in **Part 3C** is quite simple. It just calls `bfp_s32_dot()`
@@ -254,26 +172,13 @@ entering the main thread loop.
 
 ### **Part 3C** `tx_frame()` Implementation
 
-From [`part3C.c`](TODO):
-```c
-// Send a frame of new audio data
-static inline 
-void tx_frame(
-    const chanend_t c_audio,
-    bfp_s32_t* frame_out)
-{
-  const exponent_t output_exp = -31;
-  
-  // The output channel is expecting PCM samples with a *fixed* exponent of
-  // output_exp, so we'll need to convert samples to use the correct exponent
-  // before sending.
-  bfp_s32_use_exponent(frame_out, output_exp);
 
-  // And send the samples
-  for(int k = 0; k < FRAME_SIZE; k++)
-    chan_out_word(c_audio, frame_out->data[k]);
-  
-}
+```{literalinclude} ../src/part3C/part3C.c
+---
+language: C
+start-after: +tx_frame
+end-before: -tx_frame
+---
 ```
 
 In **Part 3C** `tx_frame()` is similar to that in **Part 3B**.  Its job is to
@@ -288,24 +193,13 @@ sample into the channel. **Part 3C**, however, accomplishes this just by calling
 
 ### **Part 3C** `rx_frame()` Implementation
 
-From [`part3C.c`](TODO):
-```c
-static inline 
-void rx_frame(
-    bfp_s32_t* frame_in,
-    const chanend_t c_audio)
-{
-  // We happen to know a priori that samples coming in will have a fixed 
-  // exponent of input_exp, and there's no reason to change it, so we'll just
-  // use that.
-  frame_in->exp = -31;
 
-  for(int k = 0; k < FRAME_SIZE; k++)
-    frame_in->data[k] = chan_in_word(c_audio);
-  
-  // Make sure the headroom is correct
-  calc_headroom(frame_in);
-}
+```{literalinclude} ../src/part3C/part3C.c
+---
+language: C
+start-after: +rx_frame
+end-before: -rx_frame
+---
 ```
 
 `rx_frame()` is almost identical to that in **Part 3A** and **Part 3B**. The
@@ -314,37 +208,13 @@ encapsulated inside the `bfp_s32_t` object.
 
 ### **Part 3C** `rx_and_merge_frame()` Implementation
 
-From [`part3C.c`](TODO):
-```c
-// Accept a frame of new audio data and merge it into sample history
-static inline 
-void rx_and_merge_frame(
-    bfp_s32_t* sample_history,
-    const chanend_t c_audio)
-{    
-  // BFP vector into which new frame will be placed.
-  int32_t frame_in_buff[FRAME_SIZE];
-  bfp_s32_t frame_in;
-  bfp_s32_init(&frame_in, frame_in_buff, 0, FRAME_SIZE, 0);
 
-  // Accept a new input frame
-  rx_frame(&frame_in, c_audio);
-
-  // Rescale BFP vectors if needed so they can be merged
-  const exponent_t min_frame_in_exp = frame_in.exp - frame_in.hr;
-  const exponent_t min_history_exp = sample_history->exp - sample_history->hr;
-  const exponent_t new_exp = MAX(min_frame_in_exp, min_history_exp);
-
-  bfp_s32_use_exponent(sample_history, new_exp);
-  bfp_s32_use_exponent(&frame_in, new_exp);
-  
-  // Now we can merge the new frame in (reversing order)
-  for(int k = 0; k < FRAME_SIZE; k++)
-    sample_history->data[FRAME_SIZE-1-k] = frame_in.data[k];
-
-  // And just ensure the headroom is correct
-  calc_headroom(sample_history);
-}
+```{literalinclude} ../src/part3C/part3C.c
+---
+language: C
+start-after: +rx_and_merge_frame
+end-before: -rx_and_merge_frame
+---
 ```
 
 `rx_and_merge_frame()` in **Part 3C** is somewhat simpler than in the previous

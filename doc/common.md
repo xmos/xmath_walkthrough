@@ -1,6 +1,4 @@
 
-[Prev](filter.md) | [Home](intro.md) | [Next](part1.md)
-
 # Common Code
 
 Before diving into stage-specific code, it is worth taking a brief look at some

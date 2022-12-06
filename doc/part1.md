@@ -1,21 +1,20 @@
 
-[Prev](common.md) | [Home](intro.md) | [Next](part1A.md)
-
 # Part 1: Floating-Point Arithmetic
 
-Contents:
-* [Introduction](#introduction)
-* [Stages](#stages)
-* [Floating-Point Background](#floating-point-background)
-* [Component Functions](#component-functions)
-  * [`filter_task()`](#filter_task)
-  * [`filter_sample()`](#filter_sample)
-  * [`rx_frame()`](#rx_frame)
-  * [`tx_frame()`](#tx_frame)
+**Part 1** deals with floating-point arithmetic.
 
-## Introduction
+```{toctree}
+---
+maxdepth: 1
+---
+./part1A.md
+./part1B.md
+./part1C.md
+```
 
-**Part 1** deals with floating-point arithmetic. It is useful to start with a floating-point implementation, and particularly one written in plain C, because many users approach xcore.ai with their algorithms implented in floating-point and plain C for the sake of portability.
+It is useful to start with a floating-point implementation, and particularly one
+written in plain C, because many users approach xcore.ai with their algorithms
+implented in floating-point and plain C for the sake of portability.
 
 ## Stages
 
@@ -23,9 +22,12 @@ Contents:
 double-precision floating-point values. It is implemented in plain C so that
 nothing is hidden from the reader.
 
-**Part 1B** is nearly identical to **Part 1A**, except single-precision floating-point values are used. It is also implemented in plain C.
+**Part 1B** is nearly identical to **Part 1A**, except single-precision
+floating-point values are used. It is also implemented in plain C.
 
-**Part 1C** uses single-precision floating-point values like **Part 1B**, but will use a library function from `lib_xcore_math` to do the heavy lifting, both simplifying the implementation and getting a hefty performance boost.
+**Part 1C** uses single-precision floating-point values like **Part 1B**, but
+will use a library function from `lib_xcore_math` to do the heavy lifting, both
+simplifying the implementation and getting a hefty performance boost.
 
 ## Floating-Point Background
 
@@ -37,7 +39,8 @@ nothing is hidden from the reader.
 
 In each stage of **Part 1**, PCM samples receives from `tile[0]` are converted
 to floating-point, and floating-point output samples are converted to PCM
-samples before being sent to `tile[0]`. These to steps happen in the `frame_rx()` and `frame_tx()` functions respectively.
+samples before being sent to `tile[0]`. These to steps happen in the
+`frame_rx()` and `frame_tx()` functions respectively.
 
 The actual input and output sample values going between tiles are all raw
 integer values -- just as they're found in the `wav` files. When converting to
@@ -50,10 +53,13 @@ For the sake of allowing output waveforms to be directly compared, we continue
 to use  implicit or explicit input and output exponents of `-31` throughout this
 tutorial.
 
-> **Note**: The reason the assumed exponent is arbitrary is because we're
-> implementing a _linear_ digital filter. If the filter was not linear (e.g. if
-> there was a square root somewhere in the logic) the output values would differ
-> depending upon our choice of input exponent.
+```{note} 
+The reason the assumed exponent is arbitrary is because we're implementing a 
+_linear_ digital filter. If the filter was not linear (e.g. if there was a 
+square root somewhere in the logic) the output values would differ depending 
+upon our choice of input exponent.
+```
+
 
 To see the logic of this conversion, consider a 32-bit PCM sample being received
 with a value of `0x2000000`. In **Part 1A** `ldexp()` is used to perform the conversion as
@@ -144,8 +150,10 @@ more easily compared.
 
 When looking at the code for each stage, these are the functions we'll examine.
 
-> **Note**: The _signatures_ for these functions are _not_ the same for all
-> stages.
+
+```{note} 
+The _signatures_ for these functions are _not_ the same for all stages.
+```
 
 ### `filter_task()`
 
@@ -171,10 +179,13 @@ running on tile 0 via a channel. In most cases, this function will store the
 received samples into the sample history _in reverse chronological order_, to
 ensure the ordering of sample data matches the order of filter coefficients.
 
-> **Note**: We happen to be using a symmetric filter, so the ordering isn't
-> actually important in our case. However, in general the order does matter.
+```{note} 
+We happen to be using a symmetric filter, so the ordering isn't actually
+important in our case. However, in general the order does matter.
+```
 
 ### `tx_frame()`
 
 This function uses a channel to send a frame of output audio samples back to the
 `wav_io` thread on tile 0.
+

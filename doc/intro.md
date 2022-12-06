@@ -1,7 +1,5 @@
 
-Prev | Home | [Next](building.md)
-
-## Introduction
+# Introduction
 
 This repository is a hands-on tutorial for developers interested in writing
 efficient DSP or other compute-heavy logic on xcore devices.

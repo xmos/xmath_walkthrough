@@ -1,7 +1,4 @@
 
-[Prev](part1A.md) | [Home](intro.md) | [Next](part2.md)
-
-
 # Part 1C
 
 Like [**Part 1B**](part1B.md), **Part 1C** implements the FIR filter using
@@ -22,7 +19,7 @@ default, emit dual-issue implementations of C functions. And second, custom asse
 
 This stage makes use of the following operations from `lib_xcore_math`:
 
-* [`vect_f32_dot()`](TODO)
+* [`vect_f32_dot()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32.h#L399-L480)
 
 #### `vect_f32_dot()`
 
@@ -48,17 +45,12 @@ implementation of `filter_sample()`.
 
 ### Part 1C `filter_sample()` Implementation
 
-From [`part1c.c`](TODO):
-```c
-//Apply the filter to produce a single output sample
-float filter_sample(
-    const float sample_history[TAP_COUNT])
-{
-  // Return the inner product of sample_history[] and filter_coef[]
-  return vect_f32_dot(&sample_history[0], 
-                      &filter_coef[0], 
-                      TAP_COUNT);
-}
+```{literalinclude} ../src/part1C/part1C.c
+---
+language: C
+start-after: +filter_sample
+end-before: -filter_sample
+---
 ```
 
 Whereas **Part 1B** implemented `filter_sample()` by looping over the filter

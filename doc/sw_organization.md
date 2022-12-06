@@ -1,6 +1,4 @@
 
-[Prev](building.md) | [Home](intro.md) | [Next](filter.md)
-
 # Software Organization
 
 Each of the firmwares built in this tutorial are variations of the same basic
