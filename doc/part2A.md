@@ -1,22 +1,22 @@
 
-[Prev](partB.md) | [Home](../intro.md) | [Next](stage4.md)
+[Prev](partB.md) | [Home](intro.md) | [Next](stage4.md)
 
-# Stage 3
+# Part 2A
 
-In **Stage 3** we dropped floating-point arithmetic in favor of fixed-point
-arithmetic. **Stage 3**, like [**Stage 1**](stage1.md), implements the inner
-product using plain C. Like **Stage 1** (compared to [**Stage 2**](stage2.md)),
-this will not be a highly optimized implementation. Optimization will come in
+In **Part 2A** we drop floating-point arithmetic in favor of fixed-point
+arithmetic. **Part 2A**, like [**Part 1B**](part1B.md), implements the inner
+product using plain C. Like **Part 1B** (compared to [**Part 1C**](part1C.md)),
+this will not be a highly optimized implementation. Optimizations will come in
 the next stage.
 
 Ultimately we will find that fixed-point written in plain C is slower than the
-optimized floating-point from [**Stage 2**](stage2.md).
+optimized floating-point from [**Part 1C**](part1C.md).
 
 ## Implementation
 
-## Part 2A `filter_task()` Implementation
+### Part 2A `filter_task()` Implementation
 
-From [`stage3.c`](TODO):
+From [`part2A.c`](TODO):
 ```C
 /**
  * This is the thread entry point for the hardware thread which will actually 
@@ -64,7 +64,7 @@ Here we can see that `filter_task()` in **Part 2A** closely resembles the
 `float` as the type for its buffers, `q1_31` is used. Beyond that, the same
 kinds of steps are involved in the processing.
 
-## Part 2A `rx_frame()` Implementation
+### Part 2A `rx_frame()` Implementation
 
 From [`part2A.c`](TODO):
 ```C 
@@ -87,9 +87,9 @@ choice we made in **Part 1** when converting inputs to floating-point.
 `rx_frame()` just reads the input samples from the channel `c_audio` and
 populates the provided buffer with those samples in reverse order.
 
-## Part 2A `tx_frame()` Implementation
+### Part 2A `tx_frame()` Implementation
 
-From [`stage3.c`](TODO):
+From [`part2A.c`](TODO):
 ```c
 // Send a frame of new audio data
 static inline 
@@ -108,7 +108,7 @@ void tx_frame(
 
 ### Part 2A `filter_sample()` Implementation
 
-From [`stage3.c`](TODO):
+From [`part2A.c`](TODO):
 ```c
 //Apply the filter to produce a single output sample
 q1_31 filter_sample(
@@ -183,17 +183,9 @@ representable value.
 
 
 
-
-
-
-
-
-
-
-
 ### Part 2A Fixed-Point Logic
 
-Let's dig into the logic used in **Stage 3**'s `filter_sample()`.
+Let's dig into the logic used in **Part 2A**'s `filter_sample()`.
 
 In this stage our task was to convert 
 
@@ -209,7 +201,7 @@ Rewriting the equation by unpacking our logical values into objects which can be
 used in code, we get
 
 $$
-  \mathtt{y}[k] (\cdot 2^{\hat{y}}) = \sum_{n=0}^{N-1} ({\mathtt{x}[k-n] 
+  (\mathtt{y}[k] \cdot 2^{\hat{y}}) = \sum_{n=0}^{N-1} ({\mathtt{x}[k-n] 
                 \cdot 2^{\hat{x}}) \cdot (\mathtt{b}[n]\cdot 2^{\hat{b}}})
 $$
 
@@ -265,14 +257,14 @@ $$
 $$
 
 where $\vec{r}=(\hat{y}-\hat{P})$ and we're using the $\mathtt{\gg}$ to mean
-$\mathtt{P}$ gets a signed, arithmetic right-shift of $(\hat{y}-\hat{P})$ bits.
+$\mathtt{P}$ gets a signed, arithmetic right-shift of $\vec{r}$ bits.
 
 > **Notation**: Similar to how $\,\,\hat{}\,\,$ is used in this tutorial to hint
 > to the reader that the variable (e.g. $\hat{y}$ ) is an exponent, the
 > $\,\,\vec{}\,\,$ symbol will be used as a hint to the reader that the variable
 > (e.g. $\vec{r}$ ) represents a right-shift.
 >
-> Vectors or arrays will always be represented using either the $\,\,\bar{}\,\,$ symbol, or using square brackets. e.g. $\bar{x}$ or $\mathtt{x}[\,]$.
+> Vectors of "real" values will always be represented using the $\,\,\bar{}\,\,$ symbol, and vectors of mantissas using square brackets. e.g. $\bar{x}$ and $\mathtt{x}[\,]$.
 
 Now we can find $\vec{r}$.
 
@@ -285,7 +277,7 @@ $$
 \end{aligned}
 $$
 
-Therefore a right-shift of `28` bits must be applied to `acc` in `filter_sample()`, which is what `acc_shr` is.
+Therefore a right-shift of `28` bits must be applied to `acc` in `filter_sample()`, which is what `acc_shr` is in **Part 2A**.
 
 > **Note**: It doesn't affect our filter, but in general when the output
 > bit-depth and exponent are fixed we must be aware that overflows or saturation

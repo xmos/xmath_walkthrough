@@ -1,13 +1,12 @@
 
-[Prev](stage7.md) | [Home](../intro.md) | [Next](PartD.md)
+[Prev](part3B.md) | [Home](intro.md) | [Next](PartD.md)
 
 # Stage 8
 
-In **Stage 8** we finally begin using `lib_xcore_math`'s block floating-point
-(BFP) API.
+In **Part 3C** we finally use `lib_xcore_math`'s block floating-point (BFP) API.
 
 Here we don't expect any particularly noticeable performance boost relative to
-[**Stage 7**](stage7.md)'s implementation. At bottom, both stages
+[**Part 3B**](part3B.md.md)'s implementation. At bottom, both stages
 ultimately use the same function (`vect_s32_dot()`) to do the bulk of the work
 computing the filter output. Instead, in this stage we will see how using the
 `lib_xcore_math` BFP API can simplify our code by doing much of the book-keeping
@@ -18,16 +17,21 @@ particularly because of our application's requirement for fixed-point output
 samples. We'll see a somewhat more intrinsically BFP implementation when we get
 to [**Stage 12**](stage12.md).
 
-## Introduction
+### From `lib_xcore_math`
 
-## Background
+This stage makes use of the following operations from `lib_xcore_math`:
+
+* [`bfp_s32_init()`](TODO)
+* [`bfp_s32_headroom()`](TODO)
+* [`bfp_s32_use_exponent()`](TODO)
+* [`vect_s32_dot_prepare()`](TODO)
 
 
 ## Implementation
 
-### **Stage 8** `calc_headroom()` Implementation
+### **Part 3C** `calc_headroom()` Implementation
 
-From [`stage8.c`](TODO):
+From [`part3C.c`](TODO):
 ```c
 // Compute headroom of int32 vector.
 static inline
@@ -41,12 +45,12 @@ headroom_t calc_headroom(
 In this stage `calc_headroom()` just calls the `bfp_s32_headroom()` operation on
 the provided BFP vector. `bfp_s32_headroom()` _both_ updates the `hr` field of
 the `bfp_s32_t` object, and returns that headroom. In this case
-`calc_headroom()` also returns that headroom, though in **Stage 8** the returned
+`calc_headroom()` also returns that headroom, though in **Part 3C** the returned
 value is not needed and not used.
 
-### **Stage 8** `filter_task()` Implementation
+### **Part 3C** `filter_task()` Implementation
 
-From [`stage8.c`](TODO):
+From [`part3C.c`](TODO):
 ```c
 /**
  * This is the thread entry point for the hardware thread which will actually 
@@ -98,7 +102,7 @@ void filter_task(
 }
 ```
 
-In **Stage 8** `filter_task()` is quite similar to that in the previous two
+In **Part 3C** `filter_task()` is quite similar to that in the previous two
 stages. This time we have a few calls at the beginning to initialize some of the
 BFP vectors. Notably, this time we must intialize `bfp_filter_coef`, the BFP
 vector representing the filter coefficients, which we did not need to do in
@@ -110,14 +114,14 @@ used to store the vector's elements. The final argument to `bfp_s32_init()` is a
 boolean indicating whether the vector's headroom should be calculated during
 initialization.
 
-While calculating the headroom involves iterating over the array's data, which
-should be avoided when unnecessary. In particular, it usually does not make
-sense to calculate headroom if the element buffer hasn't already been populated
-with initial values.
+Calculating the headroom involves iterating over the array's data, which should
+be avoided when unnecessary. In particular, it usually does not make sense to
+calculate headroom if the element buffer hasn't already been populated with
+initial values.
 
-### **Stage 8** `filter_frame()` Implementation
+### **Part 3C** `filter_frame()` Implementation
 
-From [`stage8.c`](TODO):
+From [`part3C.c`](TODO):
 ```c
 // Calculate entire output frame
 void filter_frame(
@@ -156,7 +160,7 @@ void filter_frame(
 }
 ```
 
-`filter_frame()` in **Stage 8** is tricky. At bottom the issue here is that
+`filter_frame()` in **Part 3C** is tricky. At bottom the issue here is that
 `lib_xcore_math`'s BFP API doesn't provide any convolution operations suitable
 for this scenario. There _are_ a pair of 32-bit BFP convolution functions,
 [`bfp_s32_convolve_valid()`](TODO) and [`bfp_s32_convolve_same()`](TODO),
@@ -165,7 +169,7 @@ however these are optimized for (and only support) small convolution kernels of
 
 In fact, BFP is probably _not_ the right approach for implementing an FIR filter
 using `lib_xcore_math` (we'll see better approaches in [**Stage
-10**](stage10.md) and [**Stage 11**](stage11.md)).
+10**](stage10.md) and [**Part 4C**](stage11.md)).
 
 But in keeping with the spirit of this tutorial, this stage attempt to implement
 the filter using the BFP API as best possible.
@@ -184,10 +188,10 @@ pointer 'slides' back 1 element towards the start of the `sample_history`
 vector. Recall that in all previous stages, we actually did something similar --
 each call to `filter_sample()` in previous stages passed a pointer to a
 different location of the history vector.  This is basically doing the same
-thing, in a way that corrects for the fact that **Stage 8**'s `filter_sample()`
+thing, in a way that corrects for the fact that **Part 3C**'s `filter_sample()`
 needs a BFP vector _the same length as `bfp_filter_coef`_.
 
-The other tricky piece to `filter_frame()` in **Stage 8** is the determination
+The other tricky piece to `filter_frame()` in **Part 3C** is the determination
 of the output exponent.  Here we _could have_ just called
 `vect_s32_dot_prepare()` to determine the output exponent. For the sake of
 sticking with BFP functions it takes a different approach, which takes advantage
@@ -218,9 +222,9 @@ exponent, and use `float_s64_to_fixed()` to shift samples before placing them in
 > API](TODO) instead.
 
 
-### **Stage 8** `filter_sample()` Implementation
+### **Part 3C** `filter_sample()` Implementation
 
-From [`stage8.c`](TODO):
+From [`part3C.c`](TODO):
 ```c
 /**
  * Apply the filter to produce a single output sample.
@@ -236,7 +240,7 @@ float_s64_t filter_sample(
 }
 ```
 
-`filter_sample()` in **Stage 8** is quite simple. It just calls `bfp_s32_dot()`
+`filter_sample()` in **Part 3C** is quite simple. It just calls `bfp_s32_dot()`
 to compute the inner product of the provided `sample_history` BFP vector and the
 filter coefficient BFP vector. 
 
@@ -248,9 +252,9 @@ vectors representd by a `bfp_s32_t` need to be initialized before they can be
 used. In this case `bfp_filter_coef` is initialized in `filter_task()` prior to
 entering the main thread loop.
 
-### **Stage 8** `tx_frame()` Implementation
+### **Part 3C** `tx_frame()` Implementation
 
-From [`stage8.c`](TODO):
+From [`part3C.c`](TODO):
 ```c
 // Send a frame of new audio data
 static inline 
@@ -272,19 +276,19 @@ void tx_frame(
 }
 ```
 
-In **Stage 8** `tx_frame()` is similar to that in **Stage 7**.  Its job is to
+In **Part 3C** `tx_frame()` is similar to that in **Part 3B**.  Its job is to
 ensure output samples are using an exponent of `-31`, and then send them to the
 `wav_io` thread.
 
-In **Stage 7** this was accomplished by explicitly calculating a shift to be
+In **Part 3B** this was accomplished by explicitly calculating a shift to be
 applied to each sample value and then applying them before putting the output
-sample into the channel. **Stage 8**, however, accomplishes this just by calling `bfp_s32_use_exponent()`.
+sample into the channel. **Part 3C**, however, accomplishes this just by calling `bfp_s32_use_exponent()`.
 
 `bfp_s32_use_exponent()` coerces a BFP vector to use a particular exponent, shifting the elements as necessary to accomplish that. It is an easy way to move from a block floating-point domain (this stage's filter) into a fixed-point domain (the `wav_io` thread).
 
-### **Stage 8** `rx_frame()` Implementation
+### **Part 3C** `rx_frame()` Implementation
 
-From [`stage8.c`](TODO):
+From [`part3C.c`](TODO):
 ```c
 static inline 
 void rx_frame(
@@ -304,13 +308,13 @@ void rx_frame(
 }
 ```
 
-`rx_frame()` is almost identical to that in **Stage 6** and **Stage 7**. The
+`rx_frame()` is almost identical to that in **Part 3A** and **Part 3B**. The
 only real difference is that the mantissas, exponent and headroom are now
 encapsulated inside the `bfp_s32_t` object.
 
-### **Stage 8** `rx_and_merge_frame()` Implementation
+### **Part 3C** `rx_and_merge_frame()` Implementation
 
-From [`stage8.c`](TODO):
+From [`part3C.c`](TODO):
 ```c
 // Accept a frame of new audio data and merge it into sample history
 static inline 
@@ -343,14 +347,13 @@ void rx_and_merge_frame(
 }
 ```
 
-`rx_and_merge_frame()` in **Stage 8** is somewhat simpler than in the previous
+`rx_and_merge_frame()` in **Part 3C** is somewhat simpler than in the previous
 two stages. A temporary BFP vector, `frame_in`, is initialized and `rx_frame()`
 is called to populate that with the new frame data. After that, the exponents of
 `frame_in` and `sample_history` still need to be reconciled, but this time once
 the exponent is chosen we use `bfp_s32_use_exponent()` on both vectors to make
 sure their exponents are equal. After that the new data is copied into the
 sample history.
-
 
 
 ## Results

@@ -75,14 +75,18 @@ void rx_and_merge_frame(
   const right_shift_t frame_in_shr = new_exp - frame_in.exp;
 
   if(hist_shr) {
-    for(int k = FRAME_SIZE; k < HISTORY_SIZE; k++)
-      sample_history[k] = ashr32(sample_history[k], hist_shr);
+    vect_s32_shr(&sample_history[0], 
+                 &sample_history[0], 
+                 HISTORY_SIZE,
+                 hist_shr);
     *sample_history_exp = new_exp;
   }
 
   if(frame_in_shr){
-    for(int k = 0; k < FRAME_SIZE; k++)
-      frame_in.data[k] = ashr32(frame_in.data[k], frame_in_shr);
+    vect_s32_shr(&frame_in.data[0],
+                 &frame_in.data[0],
+                 FRAME_SIZE,
+                 frame_in_shr);
   }
   
   // Now we can merge the new frame in (reversing order)

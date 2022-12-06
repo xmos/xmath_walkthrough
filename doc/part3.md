@@ -1,19 +1,20 @@
 
-[Prev](stage5.md) | [Home](intro.md) | [Next](stage6.md)
+[Prev](part2C.md) | [Home](intro.md) | [Next](part3A.md)
 
 
+# Part 3: Block Floating-Point Arithmetic
 
-# Part C: Block Floating-Point Arithmetic
-
-In **Part B** our digital FIR filter was implemented using fixed-point
-arithmetic. In **Part C** we will update it to use block floating-point (BFP)
+In **Part 2** our digital FIR filter was implemented using fixed-point
+arithmetic. In **Part 3** we will update it to use block floating-point (BFP)
 arithmetic.
 
 * [Stages](#stages)
+* [Component Functions](#component-functions)
 * [Block Floating-Point](#block-floating-point)
 * [Headroom](#headroom)
 * [Choosing Exponents](#choosing-exponents)
 * [BFP in `lib_xcore_math`](#bfp-in-lib_xcore_math)
+  * [Prepare Functions](#_prepare-functions-in-lib_xcore_math)
   * [BFP Types](#bfp-types)
   * [BFP Operations](#bfp-operations)
 
@@ -23,32 +24,53 @@ represent them. BFP arithmetic will allow us to avoid making those decisions at
 compile time. Instead we will have to dynamically choose exponents as we go to
 perform an operation, based on what we know about the inputs to that operation.
 
-**Part C** comprises [**Stage 6**](TODO), [**Stage 7**](TODO), and [**Stage
-8**](TODO). These stages are structured much the same as in **Part B**, each
+
+## Stages
+
+In **Part 3A**, both the BFP vector objects and the BFP vector arithmetic are
+implmented in plain C, to demonstrate how the operations actually work under the
+hood.
+
+In **Part 3B**, some of the C routines from **Part 3A** are replaced with
+optimized library calls to `lib_xcore_math`'s vector API.
+
+In **Part 3C**, the BFP vector objects from **Part 3A** are replaced with BFP
+vector types defined in `lib_xcore_math`, and the vector API calls from **Stage
+7** are replaced with operations from `lib_xcore_math`'s BFP API.
+
+## Component Functions
+
+The stages in **Part 3** are structured much the same as in **Part 2**, each
 using their own versions of several functions. Things are a bit more complicated
-this time, with 7 different functions implemented by each stage. Those are
-`filter_task()`, `filter_frame()`, `filter_sample()`, `calc_headroom()`,
-`tx_frame()`, `rx_frame_bfp()`, and `rx_and_merge_frame()`.
+this time, with 7 different functions implemented by each stage: 
+
+* `filter_task()`
+* `filter_frame()`
+* `filter_sample()` 
+* `calc_headroom()`
+* `tx_frame()`
+* `rx_frame_bfp()`
+* `rx_and_merge_frame()`
 
 `filter_task()` and `filter_sample()`, and `tx_frame()` fill largely the same
 roles as in previous stages.
 
 `filter_frame()` sits between `filter_task()` and `filter_sample()` on the call
 stack. In BFP, we are typically calling operations which compute a whole vector
-of values at once. `filter_frame()` fills that role for **Part C**. In **Part
-C**, `filter_sample()` is used by `filter_frame()` to compute individual output
+of values at once. `filter_frame()` fills that role for **Part 3**. In **Part
+3**, `filter_sample()` is used by `filter_frame()` to compute individual output
 elements, while `filter_frame()` is used by `filter_task()` to compute an entire
 output frame at once.
 
 `calc_headroom()` is a helper function which will be used to calculate the
 headroom of our BFP vectors.
 
-`tx_frame()` behaves much as it did in **Part B**, except the output frame it is
+`tx_frame()` behaves much as it did in **Part 2**, except the output frame it is
 given may not be using the desired output exponent, so `tx_frame()` will need to
 coerce sample values into the correct output exponent before sending them to
 tile 0.
 
-In **Part C** `rx_and_merge_frame()` and `rx_frame()` together perform a role
+In **Part 3** `rx_and_merge_frame()` and `rx_frame()` together perform a role
 similar to that of `rx_frame()` in previous stages. `rx_frame()` behaves much
 like it did before, but does not merge the frame into the sample history.
 Instead it just reports the new frame's mantissas, exponent and headroom.
@@ -61,19 +83,6 @@ the new frame of data into the sample history.
 This is an unusual BFP operation because before we can merge the new frame of
 data into the sample history, we have to ensure that both the new and old sample
 data use the same exponent.
-
-## Stages
-
-In **Stage 6**, both the BFP vector objects and the BFP vector arithmetic are
-implmented in plain C, to demonstrate how the operations actually work under the
-hood.
-
-In **Stage 7**, some of the C routines from **Stage 6** are replaced with
-optimized library calls to `lib_xcore_math`'s vector API.
-
-In **Stage 8**, the BFP vector objects from **Stage 6** are replaced with BFP
-vector types defined in `lib_xcore_math`, and the vector API calls from **Stage
-7** are replaced with operations from `lib_xcore_math`'s BFP API.
 
 ## Block Floating-Point
 
@@ -469,6 +478,9 @@ where the exponent grows and grows, irrespective of the headroom of the mantissa
 vector.
 
 
+
+## BFP in `lib_xcore_math`
+
 ### `*_prepare()` Functions in `lib_xcore_math`
 
 To faciliate BFP operations, many of the functions in `lib_xcore_math`'s Vector
@@ -527,7 +539,7 @@ headroom_t vect_s32_mul(
 ```
 
 Finally, let's take a look at `vect_s32_dot_prepare()`, which we will encounter
-in **Stage 7**:
+in **Part 3B**:
 
 From [`vect_s32_prepare.h`](TODO):
 ```C
@@ -557,7 +569,6 @@ themselves, implying the exponent will need to be incremented to avoid
 overflows. If `16` element-wise products are being added, the result may be 16
 times as large, requiring an extra `4` bits ( $4=log_2(16)$ ) to store the result, or an increment of the output exponent by `4`.
 
-## BFP in `lib_xcore_math`
 
 ### BFP Types
 
@@ -578,7 +589,7 @@ Field             | Description
 
 ### BFP Operations
 
-Several BFP operations will be encountered in **Part C** when we get to [**Stage 8**](stage8.md).
+Several BFP operations will be encountered in **Part 3** when we get to [**Part 3C**](stage8.md).
 
 #### `bfp_s32_init()`
 

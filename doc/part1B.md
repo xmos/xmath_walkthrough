@@ -1,5 +1,5 @@
 
-[Prev](part1A.md) | [Home](../intro.md) | [Next](part1C.md)
+[Prev](part1A.md) | [Home](intro.md) | [Next](part1C.md)
 
 # Part 1B
 
@@ -29,7 +29,7 @@ Because **Part 1B** is so similar to **Part 1A**, implementations for
 
 ### Stage 1 `filter_sample()` Implementation
 
-From [`stage1.c`](TODO):
+From [`part1B.c`](TODO):
 ```c
 //Apply the filter to produce a single output sample
 float filter_sample(

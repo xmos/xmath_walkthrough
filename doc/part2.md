@@ -83,9 +83,9 @@ then we will dive into the logic of choosing exponents to represent our
 fixed-point values. It will finish up with some in-depth examples.
 
 
-## **Part B** Filter Coefficients
+## **Part 2** Filter Coefficients
 
-Whereas in **Part A** the filter coefficients were implemented as a constant array of `double` (**Stage 0**) or `float` (**Stages 1** and **2**) values, in **Part B** the filter coefficients are represented by an array of `q4_28` values (i.e. the `Q4.28` format). With `28` fractional bits, these coefficients have an implied exponent of `-28`.
+Whereas in **Part 1** the filter coefficients were implemented as a constant array of `double` (**Part 1A**) or `float` (**Stages 1** and **2**) values, in **Part 2** the filter coefficients are represented by an array of `q4_28` values (i.e. the `Q4.28` format). With `28` fractional bits, these coefficients have an implied exponent of `-28`.
 
 The filter coefficients in this part come from [`filter_coef_q4_28.c`](TODO).
 
@@ -109,14 +109,14 @@ So in `Q4.28`, each of our filter coefficients should be represented by the inte
 Using the `Q4.28` format was our choice. Normally when choosing a representation
 for a fixed-point data it's a good idea to use the lowest exponent which avoids
 losing data. That corresponds to having zero headroom -- a concept that we will
-come back to in **Part C**. Using a minimal exponent generally means maximal
+come back to in **Part 3**. Using a minimal exponent generally means maximal
 precision. In this particular case, because our coefficients are a power of 2,
 any admissible exponent will be equivalent.
 
 ## Scientific Notation for Fixed- and Floating-Point Values
 
 We need to take our conceptual, mathematical objects (like filter coefficients)
-and represent them in code. In **Part A** this was simple, because the scalar
+and represent them in code. In **Part 1** this was simple, because the scalar
 floating-point types are abstractions which encapsulate all the pieces we care
 about. And so there was no need to reason about the mantissas and exponents of
 individual values or vectors.
@@ -386,4 +386,4 @@ $$
 
 We can see here that attempting to left-shift these mantissa values one bit would cause $\mathtt{p}[3]$ to overflow into the sign bit, corrupting the value. So, $-29$ is indeed the minimum exponent.
 
-In [**Part C**](partC.md) we will see that there is a shortcut for computing exponents using another property we can extract from scalars and vectors called the **headroom**.
+In [**Part 3**](partC.md) we will see that there is a shortcut for computing exponents using another property we can extract from scalars and vectors called the **headroom**.

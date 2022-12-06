@@ -1,30 +1,34 @@
 
-[Prev](stage9.md) | [Home](../intro.md) | [Next](stage11.md)
+[Prev](part4A.md) | [Home](intro.md) | [Next](part4C.md)
 
-# Stage 10
+# Part 4B
 
-**Stage 10** takes a very different approach than all previous stages. **Stage
-10** uses the [digital filter API](TODO) provided by `lib_xcore_math`. In this
+**Part 4B** takes a very different approach than all previous stages. **Part 4B** uses the [digital filter API](TODO) provided by `lib_xcore_math`. In this
 example the FIR filter will be represented by a [`filter_fir_s32_t`](TODO)
 object. The digital filter APIs are highly optimized implementations of 16- and
 32-bit FIR filters and 32-bit biquad filters.
-
-## Introduction
 
 The filtering API in `lib_xcore_math` is essentially a fixed-point API, though,
 being linear, the actual exponents associated with the input and output samples
 are not fixed, only their _relationship_ is. Specifically, it is the
 _difference_ between the input and output exponents that is fixed.
 
+### From `lib_xcore_math`
+
+This stage makes use of the following operations from `lib_xcore_math`:
+
+* [`filter_fir_s32_init()`](TODO)
+* [`filter_fir_s32()`](TODO)
+
 
 ## Implementation
 
-The implementation for **Stage 10** is divided between 3 functions,
+The implementation for **Part 4B** is divided between 3 functions,
 `rx_frame()`, `tx_frame()` and `filter_task()`.
 
-### **Stage 10** `rx_frame()` Implementation
+### **Part 4B** `rx_frame()` Implementation
 
-From [`stage10.c`](TODO):
+From [`part4B.c`](TODO):
 ```C
 // Accept a frame of new audio data 
 static inline 
@@ -37,16 +41,16 @@ void rx_frame(
 }
 ```
 
-This is nearly identical to the `tx_frame()` found in **Stages** **3**, **4**
-and **5**. The only difference is that the newly received input samples are
-placed into `buff[]` in order, instead of reverse order. We'll see this is
-because the `filter_s32_t` object representing the filter handles its own state
-internally -- we don't need to account for the ordering of samples ourselves.
+This is nearly identical to the `tx_frame()` found in **Part 2**. The only
+difference is that the newly received input samples are placed into `buff[]` in
+order, instead of reverse order. We'll see this is because the `filter_s32_t`
+object representing the filter handles its own state internally -- we don't need
+to account for the ordering of samples ourselves.
 
 
-### **Stage 10** `tx_frame()` Implementation
+### **Part 4B** `tx_frame()` Implementation
 
-From [`stage10.c`](TODO):
+From [`part4B.c`](TODO):
 ```C
 // Send a frame of new audio data
 static inline 
@@ -59,13 +63,12 @@ void tx_frame(
 }
 ```
 
-This is identical to the `tx_frame()` found in **Stages** **3**, **4** and
-**5**.
+This is identical to the `tx_frame()` found in **Part 2**.
 
 
-### **Stage 10** `filter_task()` Implementation
+### **Part 4B** `filter_task()` Implementation
 
-From [`stage10.c`](TODO):
+From [`part4B.c`](TODO):
 ```C
 /**
  * This is the thread entry point for the hardware thread which will actually 
@@ -166,7 +169,7 @@ The parameter `tap_count` is the number of filter taps, and the final parameter
 `shift` is an arithmetic right-shift that is applied to the accumulator to
 produce a 32-bit output sample.
 
-What output shift value should be used for the filter?  Here we follow the same logic as in [**Part B**](partB.md).
+What output shift value should be used for the filter?  Here we follow the same logic as in [**Part 2**](part2.md).
 
 $$
 \begin{aligned}
@@ -184,7 +187,7 @@ $$
 Here, because `input_exp = output_exp` and `coef_exp = -vpu_shr`, the exponents
 and shifts all cancel out.
 
-The inside of `filter_task()`'s loop is much like it was in **Stage 3** with two
+The inside of `filter_task()`'s loop is much like it was in **Part 2A** with two
 key differences. First, there is no call at the end to `memmove()` to shift the
 sample history. Not only does the `filter_fir_s32_t` object handle the filter
 state for us, it also internally uses a circular buffer to store samples, so no

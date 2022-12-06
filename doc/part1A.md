@@ -29,13 +29,13 @@ structure of the firmware. [Common Code](common.md) briefly reviews some of the
 elements common to all stages. This page will zoom in and take the point-of-view
 of the `filter_task` thread in **Part 1A**, which actually does the filtering.
 
-The code specific to **Part 1A** is found in [`stage0.c`](TODO).
+The code specific to **Part 1A** is found in [`part1A.c`](TODO).
 
 **Part 1A** uses the filter coefficients from [`filter_coef_double.c`](TODO).
 
 ### Part 1A `filter_task()` Implementation
 
-From [`stage0.c`](TODO):
+From [`part1A.c`](TODO):
 ```c
 /**
  * This is the thread entry-point for the hardware thread which will actually 
@@ -189,7 +189,7 @@ reverse chronological order, as is expected by `filter_sample()`.
 ### Stage 0 `tx_frame()` Implementation
 
 
-From [`stage0.c`](TODO):
+From [`part1A.c`](TODO):
 ```c
 // Send a frame of new audio data
 static inline 

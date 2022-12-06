@@ -1,33 +1,38 @@
 
-[Prev](stage4.md) | [Home](../intro.md) | [Next](partC.md)
+[Prev](stage4.md) | [Home](intro.md) | [Next](partC.md)
 
-# Stage 5
+# Part 2C
 
-Like [**Stage 4**](stage4.md), **Stage 5** implements the FIR filter
+Like [**Part 2B**](stage4.md), **Part 2C** implements the FIR filter
 using fixed-point arithmetic. 
 
-In **Stage 4**, we called `int32_dot()` to compute the inner product for us.
+In **Part 2B**, we called `int32_dot()` to compute the inner product for us.
 While `int32_dot()` was much faster than the compiler-generated inner product we
-wrote in C (in [**Stage 3**](stage3.md)), `int32_dot()` still only uses the
+wrote in C (in [**Part 2A**](part2A.md)), `int32_dot()` still only uses the
 xcore device's scalar arithmetic unit.
 
-**Stage 5** replaces `int32_dot()` with a call to
+**Part 2C** replaces `int32_dot()` with a call to
 [`vect_s32_dot()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32.h#L399-L480),
 one of the library functions from
-[`lib_xcore_math`](https://github.com/xmos/lib_xcore_math)'s low-level vector
+[`lib_xcore_math`](https://github.com/xmos/lib_xcore_math)'s lower-level vector
 API. Unlike `int32_dot()`, `vect_s32_dot()` does use the VPU to do its work.
 
 We'll see that using the VPU gives us a significant speed-up.
 
-## Introduction
+### From `lib_xcore_math`
 
-## Background
+This stage makes use of the following operations from `lib_xcore_math`:
+
+* [`vect_s32_dot()`](TODO)
 
 ## Implementation
 
-### **Stage 5** `filter_sample()` Implementation
+In this part, `filter_task()`, `rx_frame()` and `tx_frame()` are identical to
+those in **Part 2A** and **Part 2B**.
 
-From [`stage5.c`](TODO):
+### **Part 2C** `filter_sample()` Implementation
+
+From [`part2C.c`](TODO):
 ```C
 //Apply the filter to produce a single output sample
 q1_31 filter_sample(
@@ -56,6 +61,7 @@ q1_31 filter_sample(
   // Apply a right-shift, dropping the bit-depth back down to 32 bits
   return ashr64(acc, 
                 acc_shr);
+}
 }
 ```
 
@@ -94,8 +100,10 @@ $$
 > $a$ is still considered the output in those cases.
 
 The XS3 VPU always applies a 30-bit right-shift to the product of 32-bit
-multiplies, which introduces the $2^{-30}$ factor. 
-The `b_shr` and `c_shr` parameters are signed, arithmetic right-shifts which are applied to individual elements of `b[]` and `c[]` respectively _prior_ to multiplication.
+multiplies, which introduces the $2^{-30}$ factor. The `b_shr` and `c_shr`
+parameters are signed, arithmetic right-shifts which are applied to individual
+elements of `b[]` and `c[]` respectively _prior_ to multiplication. 
+
 To see why this is necessary, consider the following hypothetical case:
 
 ```C
@@ -126,7 +134,7 @@ $$
 \end{aligned}
 $$
 
-That isn't great if we were expecting `a` to get `300`. Now consider
+That isn't great if we were expecting `a` to get `300`. Now consider:
 
 ```C
 int32_t b[] = {20};
@@ -167,7 +175,7 @@ is negative, it doesn't exceed the headroom of `b[]` or `c[]` respectively.
 
 Getting back to our filter, let's consider how we have to correct our arithmetic to account for the 30-bit right-shift.
 
-In [**Stage 3**](stage3.md) we saw that when we computed the direct product of
+In [**Part 2A**](part2A.md) we saw that when we computed the direct product of
 the input samples and filter coefficients the accumulator exponent was just the
 sum of the input exponent and the coefficient exponent. But now, instead of computing the accumulator as
 
@@ -186,10 +194,10 @@ $$
 \end{aligned}
 $$
 
-where $\mathtt{Q}$ is the new accumulator variable for **Stage 5**.
+where $\mathtt{Q}$ is the new accumulator variable for **Part 2C**.
 
 Let's figure out what we have to do to get the correct result. Starting with our
-(simplified) filter equation (see [**Stage 3**](stage3.md)):
+(simplified) filter equation (see [**Part 2A**](part2A.md)):
 
 $$
 \begin{aligned}
@@ -204,7 +212,7 @@ $$
 \end{aligned}
 $$
 
-This tells us that our accumulator exponent `acc_exp` $=\hat{Q} = \hat{x}+\hat{b}+30 = \hat{P}+30$.  Knowing that, we compute our output shift in the same way we did in **Stage 3** -- the output exponent we _want_ minus the exponent we _have_:
+This tells us that our accumulator exponent `acc_exp` $=\hat{Q} = \hat{x}+\hat{b}+30 = \hat{P}+30$.  Knowing that, we compute our output shift in the same way we did in **Part 2A** -- the output exponent we _want_ minus the exponent we _have_:
 
 > ```c
 >   const exponent_t acc_exp = input_exp + coef_exp + 30;
@@ -225,7 +233,7 @@ $$
   \frac{8\text{ elements}}{11\text{ instructions}} \cdot \left(\frac{1 \text{ element}}{4\text{ instructions}}\right)^{-1} = \frac{32}{11}\approx 2.91
 $$
 
-In practice, due to other overhead, we see a speed-up here of about $2.24$.
+In practice, due to other overhead, we see a speed-up here of about $2.4$ (computing output samples).
 
 ## Results
 

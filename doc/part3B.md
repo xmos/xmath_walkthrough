@@ -1,36 +1,43 @@
 
-[Prev](stage6.md) | [Home](../intro.md) | [Next](stage8.md)
+[Prev](part3A.md) | [Home](intro.md) | [Next](part3C.md)
 
-# Stage 7
+# Part 3B
 
-Like [**Stage 6**](stage6.md), **Stage 7** implements the FIR filter 
+Like [**Part 3A**](part3A.md), **Part 3B** implements the FIR filter 
 using block floating-point arithmetic.
 
-In **Stage 6** we implemented the block floating-point FIR filter using plain C.
+In **Part 3A** we implemented the block floating-point FIR filter using plain C.
 We had to manage exponents and headroom ourselves, as well as the logic for
-computing the inner product, which was similar to [**Stage
-3**](stage3.md).
+computing the inner product, which was similar to that in [**Part
+2A**](part2A.md).
 
-In **Stage 7** we will replace our C code which calculates and manages headroom
-and exponents with calls to functions from
-[`lib_xcore_math`](https://github.com/xmos/lib_xcore_math)'s low-level vector
-API to do some of this work for us. We also replace our `for` loop where the
-inner product is computed with a call to
-[`vect_s32_dot()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32.h#L399-L480),
-which we encountered in [**Stage 5**](stage5.md).
+In **Part 3B** we will use the same data structures as **Part 3A** to represent
+the BFP vectors, but we will replace our C code which calculates and manages
+headroom and exponents with calls to functions from `lib_xcore_maths's low-level
+vector API to do some of this work for us. We also replace our `for` loop where
+the inner product is computed with a call to `vect_s32_dot()`, which we
+encountered in [**Part 2C**](part2C.md).
 
 This will also mean using the VPU to do the bulk of the work, rather than the
 scalar unit.
 
-## Introduction
+### From `lib_xcore_math`
 
-## Background
+This stage makes use of the following operations from `lib_xcore_math`:
+
+* [`vect_s32_headroom()`](TODO)
+* [`vect_s32_dot()`](TODO)
+* [`vect_s32_dot_prepare()`](TODO)
+* [`vect_s32_shr()`](TODO)
 
 ## Implementation
 
-### **Stage 7** `calc_headroom()` Implementation
+In **Part 3B**, `filter_task()`, `rx_frame()`, and `tx_frame()` are all
+identical to those in **Part 3A**, and are omitted here.
 
-From [`stage7.c`](TODO):
+### **Part 3B** `calc_headroom()` Implementation
+
+From [`part3B.c`](TODO):
 ```c
 // Compute headroom of int32 vector.
 static inline
@@ -42,69 +49,19 @@ headroom_t calc_headroom(
 }
 ```
 
-### **Stage 7** `filter_task()` Implementation
+Here we see that in **Part 3B**, `calc_headroom()` is just a wrapper around
+`vect_s32_headroom()`. This is not only much simpler, but also much, much
+faster. `vect_s32_headroom()` still has to iterate over the entire `vec[]` array
+to determine the headroom, but unlike our C implementation,
+`vect_s32_headroom()` uses the VPU's dedicated headroom hardware to deal with 8
+elements every 3 instructions.
 
-From [`stage7.c`](TODO):
-```c
-/**
- * This is the thread entry point for the hardware thread which will actually 
- * be applying the FIR filter.
- * 
- * `c_audio` is the channel over which PCM audio data is exchanged with tile[0].
- */
-void filter_task(
-    chanend_t c_audio)
-{
+A quick examination of **Part 3A**'s `calc_headroom()` disassembly indicates
+that it handles 1 element about every 10 instructions.
 
-  // Represents the sample history as a BFP vector
-  struct {
-    int32_t data[HISTORY_SIZE]; // Sample data
-    exponent_t exp;             // Exponent
-    headroom_t hr;              // Headroom
-  } sample_history = {{0},-200,0};
+### **Part 3B** `filter_frame()` Implementation
 
-  // Represents output frame as a BFP vector
-  struct {
-    int32_t data[FRAME_SIZE];   // Sample data
-    exponent_t exp;             // Exponent
-    headroom_t hr;              // Headroom
-  } frame_output;
-
-  // Loop forever
-  while(1) {
-
-    // Read in a new frame
-    rx_and_merge_frame(&sample_history.data[0], 
-                       &sample_history.exp,
-                       &sample_history.hr, 
-                       c_audio);
-
-    // Calc output frame
-    filter_frame(&frame_output.data[0], 
-                 &frame_output.exp, 
-                 &frame_output.hr,
-                 &sample_history.data[0], 
-                 sample_history.exp, 
-                 sample_history.hr);
-
-    // Send out the processed frame
-    tx_frame(c_audio, 
-             &frame_output.data[0], 
-             frame_output.exp, 
-             frame_output.hr, 
-             FRAME_SIZE);
-
-    // Make room for new samples at the front of the vector.
-    memmove(&sample_history.data[FRAME_SIZE], 
-            &sample_history.data[0], 
-            TAP_COUNT * sizeof(int32_t));
-  }
-}
-```
-
-### **Stage 7** `filter_frame()` Implementation
-
-From [`stage7.c`](TODO):
+From [`part3B.c`](TODO):
 ```c
 // Calculate entire output frame
 void filter_frame(
@@ -140,9 +97,35 @@ void filter_frame(
 }
 ```
 
-### **Stage 7** `filter_sample()` Implementation
+In **Part 3B**, `filter_frame()` is a little different than **Part 3A**. **Part
+3B** makes use of `vect_s32_dot_prepare()` from `lib_xcore_math` to help
+determine an output exponent and shift values for us. We saw
+`vect_s32_dot_prepare()` in [**Part 3**](part3.md#_prepare-functions-in-lib_xcore_math).
 
-From [`stage7.c`](TODO):
+Briefly, `vect_s32_dot_prepare()` takes the exponents and headroom of the two
+input vectors as well as the length of the vectors and uses those to determine
+the output exponent, and two `right_shift_t` values that need to be passed to
+`vect_s32_dot()`.
+
+There is a complication here. `vect_s32_dot()` (and `filter_sample()`) return
+`int64_t` values. (This is typical for 32-bit vector functions in
+`lib_xcore_math` which return scalars, such as `vect_s32_dot()`,
+`vect_s32_energy()` and `vect_s32_sum()`). Because the VPU's accumulators in
+32-bit more are 40 bits, we know that to be safe we need to shift the result an
+extra 8 bits.
+
+So, we add 8 to the exponent given by vect_s32_dot_prepare() and shift the
+result of `filter_sample()` by 8 bits.
+
+> **Note**: Instead of shifting the output of `filter_sample()` by 8 bits, we
+> could have instead added a total of 8 between the `b_shr` and `c_shr` output
+> by `vect_s32_dot_prepare()`, however because those shifts are applied prior to
+> multiplication, adding to them may result in unnecessary loss of precision.
+
+
+### **Part 3B** `filter_sample()` Implementation
+
+From [`part3B.c`](TODO):
 ```c
 // Apply the filter to produce a single output sample.
 int64_t filter_sample(
@@ -157,63 +140,13 @@ int64_t filter_sample(
 }
 ```
 
-### **Stage 7** `tx_frame()` Implementation
+`filter_sample()` takes the sample history and the shift parameters generated by
+`vect_s32_dot_prepare()` and calls `vect_s32_dot()` much like in **Part 2C**,
+except now the 64-bit result is returned.
 
-From [`stage7.c`](TODO):
-```c
-// Send a frame of new audio data
-static inline 
-void tx_frame(
-    const chanend_t c_audio,
-    const int32_t frame_out[],
-    const exponent_t frame_out_exp,
-    const headroom_t frame_out_hr,
-    const unsigned frame_size)
-{
-  const exponent_t output_exp = -31;
-  
-  // The output channel is expecting PCM samples with a *fixed* exponent of
-  // output_exp, so we'll need to convert samples to use the correct exponent
-  // before sending.
+### **Part 3B** `rx_and_merge_frame()` Implementation
 
-  const right_shift_t samp_shr = output_exp - frame_out_exp;  
-
-  for(int k = 0; k < frame_size; k++){
-    int32_t sample = frame_out[k];
-    sample = ashr32(sample, samp_shr);
-    chan_out_word(c_audio, sample);
-  }
-}
-```
-
-### **Stage 7** `rx_frame()` Implementation
-
-From [`stage7.c`](TODO):
-```c
-// Accept a frame of new audio data 
-static inline 
-void rx_frame(
-    int32_t frame_in[FRAME_SIZE],
-    exponent_t* frame_in_exp,
-    headroom_t* frame_in_hr,
-    const chanend_t c_audio)
-{
-  // We happen to know a priori that samples coming in will have a fixed 
-  // exponent of input_exp, and there's no reason to change it, so we'll just
-  // use that.
-  *frame_in_exp = -31;
-
-  for(int k = 0; k < FRAME_SIZE; k++)
-    frame_in[k] = chan_in_word(c_audio);
-  
-  // Make sure the headroom is correct
-  calc_headroom(frame_in, FRAME_SIZE);
-}
-```
-
-### **Stage 7** `rx_and_merge_frame()` Implementation
-
-From [`stage7.c`](TODO):
+From [`part3B.c`](TODO):
 ```c
 // Accept a frame of new audio data and merge it into sample_history
 static inline 
@@ -245,14 +178,18 @@ void rx_and_merge_frame(
   const right_shift_t frame_in_shr = new_exp - frame_in.exp;
 
   if(hist_shr) {
-    for(int k = FRAME_SIZE; k < HISTORY_SIZE; k++)
-      sample_history[k] = ashr32(sample_history[k], hist_shr);
+    vect_s32_shr(&sample_history[0], 
+                 &sample_history[0], 
+                 HISTORY_SIZE,
+                 hist_shr);
     *sample_history_exp = new_exp;
   }
 
   if(frame_in_shr){
-    for(int k = 0; k < FRAME_SIZE; k++)
-      frame_in.data[k] = ashr32(frame_in.data[k], frame_in_shr);
+    vect_s32_shr(&frame_in.data[0],
+                 &frame_in.data[0],
+                 FRAME_SIZE,
+                 frame_in_shr);
   }
   
   // Now we can merge the new frame in (reversing order)
@@ -264,163 +201,11 @@ void rx_and_merge_frame(
 }
 ```
 
+The only difference between `rx_and_merge_frame()` between **Part 3A** and
+**Part 3B** is how the samples are actually shifted. Instead of looping over
+samples one by one, **Part 3B** calls `vect_s32_shr()`, which uses the VPU to
+apply a signed, arithmetic, saturating right-shift.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
----
-
-### Headroom Calculation in `filter_task()`
-
-The first change from **Stage 6** to **Stage 7** we will look at is how the 
-headroom of the input audio frame is calculated.
-
-In `stage6.c`, we calculated the input headroom in a `for` loop in
-`filter_task()` with a little help from the
-[`HR_S32()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/util.h#L145-L154)
-macro:
-
-```c
-  // Compute headroom of input frame
-  sample_history_hr = 32;
-  for(int k = 0; k < HISTORY_SIZE; k++)
-    sample_history_hr = MIN(sample_history_hr, HR_S32(sample_history[k]));
-```
-
-In `stage7.c`, we're instead calling
-[`vect_s32_headroom()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32.h#L554-L591) from `lib_xcore_math`:
-
-```c
-  // Compute headroom of input frame
-  sample_history_hr = vect_s32_headroom(&sample_history[0], HISTORY_SIZE);
-```
-
-Though not included in the timing performance measured by the apps, this new
-implementation is a much, much faster way to compute the vector's headroom.
-
-### `filter_sample()`
-
-The other key change from **Stage 6** to **Stage 7** is, of course, the
-implementation of `filter_sample()`.
-
-From `stage6.c`:
-```c
-const right_shift_t p_shr = 10;
-
-...
-
-q1_31 filter_sample(
-    const int32_t sample_history[TAP_COUNT],
-    const exponent_t history_exp,
-    const headroom_t history_hr)
-{
-  float_s64_t acc;
-  acc.mant = 0;
-
-  acc.exp = (history_exp + coef_exp) + p_shr;
-
-  for(int k = 0; k < TAP_COUNT; k++){
-    int32_t b = sample_history[k];
-    int32_t c = filter_coef[k];
-    int64_t p =  (((int64_t)b) * c);
-    acc.mant += ashr64(p, p_shr);
-  }
-
-  q1_31 sample_out = float_s64_to_fixed(acc, output_exp);
-
-  return sample_out;
-}
-```
-
-From `stage7.c`:
-```c
-q1_31 filter_sample(
-    const int32_t sample_history[TAP_COUNT],
-    const exponent_t history_exp,
-    const headroom_t history_hr)
-{
-  float_s64_t acc;
-  acc.mant = 0;
-
-  const headroom_t coef_hr = HR_S32(filter_coef[0]);
-
-  right_shift_t b_shr, c_shr;
-  vect_s32_dot_prepare(&acc.exp, &b_shr, &c_shr, 
-                        history_exp, coef_exp,
-                        history_hr, coef_hr, TAP_COUNT);
-
-  acc.mant = vect_s32_dot(&sample_history[0], &filter_coef[0], TAP_COUNT, 
-                        b_shr, c_shr);
-
-  q1_31 sample_out = float_s64_to_fixed(acc, output_exp);
-
-  return sample_out;
-}
-```
-
-In **Stage 7** we make use of 2 functions from `lib_xcore_math`. One we saw in
-**Stage 5**, `vect_s32_dot()`. New here is [`vect_s32_dot_prepare()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32_prepare.h#L182-L252).
-
-To facilitate block floating-point logic, `lib_xcore_math`'s vector API provides
-a number of "prepare" functions. A "prepare" function is a simple function
-(written in C) which selects the output exponent and any shift parameters
-required for a subsequent call to one of the optimized vector operations. By
-convention, these "prepare" functions are simply the name of the function being
-prepared for, with `_prepare` appended to the end, as with `vect_s32_dot()` and
-`vect_s32_dot_prepare()`.
-
-The exponent associated with the output of `vect_s32_dot()` depends upon 4
-things. Those are the exponents associated with each of the two input vectors
-`b[]` and `c[]`, and the `b_shr` and `c_shr` shift parameters.
-
-`vect_s32_dot_prepare()` has the following prototype:
-```c
-void vect_s32_dot_prepare(
-    exponent_t* a_exp,
-    right_shift_t* b_shr,
-    right_shift_t* c_shr,
-    const exponent_t b_exp,
-    const exponent_t c_exp,
-    const headroom_t b_hr,
-    const headroom_t c_hr,
-    const unsigned length);
-```
-
-> Note: A convention used widely in `lib_xcore_math`'s APIs is that the output
-> (vector or scalar) from an arithmetic operation is usually named `a`, and then
-> the input operands (vectors or scalars) are named `b`, `c`, etc. Understanding
-> this will greatly simplify interpretation of API functions.
->
-> With this convention, the 'inputs' and 'outputs' are those of the _arithmetic
-> operation_ rather than function parameters or return values, though they may
-> often coincide.
-
-Here `a_exp`, `b_shr` and `c_shr` are all outputs selected by the function.
-`b_exp` and `b_hr` are the exponent and headroom associated with input vector
-`b[]` -- in our case, the sample history. Likewise, `c_exp` and `c_hr` are the
-exponent and headroom associated with input vector `c[]` -- in our case, the
-filter coefficients. `length` is the number of elements in `b[]` and `c[]`.
-
-`vect_s32_dot_prepare()` will use those values to determine the minimum exponent
-`a_exp` for which the result of `vect_s32_dot()` is guaranteed not to saturate.
-The minimum exponent will also minimize the headroom of the result, allowing for
-maximal precision.
-
-> Note: While the return type of `vect_s32_dot()` is `int64_t`, the accumulators
-> on the VPU in 32-bit mode are only 40 bits wide. `vect_s32_dot_prepare()`
-> takes that into account when selecting an output exponent.
 
 ## Results
 

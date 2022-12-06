@@ -13,7 +13,7 @@ extern "C" {
   } filter_bfp; 
 
   // Apply the filter to produce a single output sample.
-  // Defined in stage9.c
+  // Defined in part4A.c
   C_API
   int64_t filter_sample(
       const int32_t * unsafe sample_history,
@@ -50,6 +50,7 @@ void filter_frame(
   for(int s = 0; s < FRAME_SIZE; s+=THREADS){
     timer_start(TIMING_SAMPLE);
     par(int tid = 0; tid < THREADS; tid++) {
+      //Code inside here happens concurrently in 4 threads
       frame_out[s+tid] = sat32(
         ashr64(filter_sample(
                 &history_in[FRAME_SIZE-(s+tid)-1], 

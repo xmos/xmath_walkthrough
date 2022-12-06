@@ -1,31 +1,36 @@
 
-[Prev](partD.md) | [Home](../intro.md) | [Next](stage10.md)
+[Prev](partD.md) | [Home](intro.md) | [Next](part4B.md)
 
-# Stage 9
+# Part 4A
 
 Up to this point, all previous stages do all of their filter computation in a
 single hardware thread. Each tile on an xcore XS3 device has 8 hardware threads
-available, and most of these threads have so far gone unused. In **Stage 9** the
+available, and most of these threads have so far gone unused. In **Part 4A** the
 application will be parallelized so that the filter computation will span
 several threads to reduce latency.
 
-**Stage 9** will take a block floating-point approach most similar to that of
-[**Stage 7**](stage7.md). The reason this stage is modeled on **Stage 7**
-instead of [**Stage 8**](stage8.md) is because `lib_xcore_math`'s high-level BFP
+**Part 4A** will take a block floating-point approach most similar to that of
+[**Part 3B**](part3B.md). The reason this stage is modeled on **Part 3B**
+instead of [**Part 3C**](part3C.md) is because `lib_xcore_math`'s high-level BFP
 API will not play nicely with this sort of parallelism. For advanced usage like
 this, the lower level API is required.
 
-## Introduction
+### From `lib_xcore_math`
 
-## Background
+This stage makes use of the following operations from `lib_xcore_math`:
+
+* [`vect_s32_headroom()`](TODO)
+* [`vect_s32_dot()`](TODO)
+* [`vect_s32_dot_prepare()`](TODO)
+* [`vect_s32_shr()`](TODO)
 
 ## Implementation
 
-**Stage 9** has its implementation split across two files, [`stage9.c`](TODO) and [`stage9.xc`](TODO). The only function implemented in `stage9.xc` is `filter_frame()`, and this is because writing it in XC allows us to take advantage of the XC language's convenient syntax for synchronous parallel operations using a `par` block.
+**Part 4A** has its implementation split across two files, [`part4A.c`](TODO) and [`stage9.xc`](TODO). The only function implemented in `stage9.xc` is `filter_frame()`, and this is because writing it in XC allows us to take advantage of the XC language's convenient syntax for synchronous parallel operations using a `par` block.
 
-In fact, in **Stage 9**, the only function which is implemented differently than in **Stage 7** is `filter_frame()`.
+In fact, in **Part 4A**, the only function which is implemented differently than in **Part 3B** is `filter_frame()`.
 
-### **Stage 9** `filter_frame()` Implementation
+### **Part 4A** `filter_frame()` Implementation
 
 From [`stage9.xc`](TODO):
 ```C
@@ -53,6 +58,7 @@ void filter_frame(
   for(int s = 0; s < FRAME_SIZE; s+=THREADS){
     timer_start(TIMING_SAMPLE);
     par(int tid = 0; tid < THREADS; tid++) {
+      //Code inside here happens concurrently in 4 threads
       frame_out[s+tid] = sat32(
         ashr64(filter_sample(
                 &history_in[FRAME_SIZE-(s+tid)-1], 
@@ -68,8 +74,8 @@ void filter_frame(
 }
 ```
 
-The internals of **Stage 9**'s `filter_frame()` also closely match that of
-**Stage 7**. In **Stage 9**, all of the parallelism happens within the
+The internals of **Part 4A**'s `filter_frame()` also closely match that of
+**Part 3B**. In **Part 4A**, all of the parallelism happens within the
 `par`-block. Semantically, and conceptually, this works much like a `for`-loop.
 The difference is, of course, that instead of each "iteration" happening
 sequentially, with the `par`-block each "iteration" happens simultaneously.
@@ -80,7 +86,7 @@ down into `filter_sample()`. In that case we could have had each thread compute
 a portion of the inner product and then leave it to the main (calling) thread to
 add the partial results together.
 
-Instead, because we're dealing with frames of data, **Stage 9** opts to have
+Instead, because we're dealing with frames of data, **Part 4A** opts to have
 each of the worker threads computing a different output sample. Specifically, on
 each iteration of the `for` loop, the next `THREADS` output samples are to be
 computed (notice `s` increments by `THREADS` each iteration). On each iteration,

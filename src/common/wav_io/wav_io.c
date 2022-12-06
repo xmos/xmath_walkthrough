@@ -95,7 +95,7 @@ int write_performance_info(
 
   char str_buff[100] = {0};
   unsigned c = sprintf(str_buff, 
-      "{\n\"sample_time\": %0.02f,\n\"tap_time\": %0.02f\n,\n\"frame_time\": %0.02f\n}\n", 
+      "{\n\"sample_time\": %0.02f,\n\"tap_time\": %0.02f,\n\"frame_time\": %0.02f\n}\n", 
       ave_sample_time_ns,
       ave_sample_time_ns / 1024,
       ave_frame_time_ns);

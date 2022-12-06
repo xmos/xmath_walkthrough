@@ -1,5 +1,5 @@
 
-[Prev](part1A.md) | [Home](../intro.md) | [Next](part2.md)
+[Prev](part1A.md) | [Home](intro.md) | [Next](part2.md)
 
 
 # Part 1C
@@ -18,10 +18,13 @@ default, emit dual-issue implementations of C functions. And second, custom asse
 
 `vect_f32_dot()` takes advantage of both of these.
 
+### From `lib_xcore_math`
 
-## `lib_xcore_math` Functions
+This stage makes use of the following operations from `lib_xcore_math`:
 
-### `vect_f32_dot()`
+* [`vect_f32_dot()`](TODO)
+
+#### `vect_f32_dot()`
 
 ```C
 C_API
@@ -59,7 +62,7 @@ float filter_sample(
 ```
 
 Whereas **Part 1B** implemented `filter_sample()` by looping over the filter
-taps, **Stage 2** instead just makes a call to `vect_f32_dot()` from
+taps, **Part 1C** instead just makes a call to `vect_f32_dot()` from
 `lib_xcore_math`.
 
 
