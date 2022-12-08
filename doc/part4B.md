@@ -79,7 +79,7 @@ Next, we now have a `filter_fir_s32_t` object called `fir_filter`.
 
 Initialization of the filter is accomplished with a call to `filter_fir_s32_init()`:
 
-> From [`filter.h`](TODO):
+
 > ```c
 > C_API
 > void filter_fir_s32_init(
@@ -93,7 +93,7 @@ Initialization of the filter is accomplished with a call to `filter_fir_s32_init
 This requires pointers to the filter object itself, the coefficient array, and a
 buffer that the filter can use for maintaining the filter state. The filter
 coefficients we provide are the `Q2.30` coefficients from
-[`filter_coef_q2_30.c`](TODO), and we declared `sample_buffer[]` to serve as the
+`filter_coef_q2_30.c`, and we declared `sample_buffer[]` to serve as the
 state buffer.
 
 The parameter `tap_count` is the number of filter taps, and the final parameter
@@ -136,7 +136,6 @@ The other difference is that `filter_fir_s32()` is called inside the `for` loop,
 instead of `filter_sample()`.
 
 
-> From [`filter.h`](TODO):
 > ```c
 > C_API
 > int32_t filter_fir_s32(

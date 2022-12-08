@@ -24,3 +24,5 @@ XCORE.AI + `lib_xcore_math` TUTORIAL
    ./part3.md
    ./part4.md
    ./perf.md
+   ./xs3_vpu.md
+   

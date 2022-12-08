@@ -51,7 +51,7 @@ $$
   \mathtt{int32\_dot} \to \sum_{k=0}^{\mathtt{length}-1} {\mathtt{x}[k] \cdot \mathtt{y}[k]}
 $$
 
-If you are interested, take a look at [`int32_dot.S`](TODO) for the
+If you are interested, take a look at `int32_dot.S` for the
 implementation.
 
 One thing to point out is the [inner loop](TODO) (from `.L_loop_top:` to

@@ -18,7 +18,7 @@ Comparing the code in `part1B.c` to the code from `part1A.c`, we see that the
 only real difference is that all `double` values have been replaced with `float`
 values.
 
-Similarly, the **Part 1B** application includes [`filter_coef_float.c`](TODO)
+Similarly, the **Part 1B** application includes `filter_coef_float.c`
 (rather than `filter_coef_double.c`) which defines `filter_coef[]` as a vector
 of `float` values.
 

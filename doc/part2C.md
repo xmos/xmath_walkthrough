@@ -1,7 +1,7 @@
 
 # Part 2C
 
-Like [**Part 2B**](stage4.md), **Part 2C** implements the FIR filter
+Like [**Part 2B**](part2B.md), **Part 2C** implements the FIR filter
 using fixed-point arithmetic. 
 
 In **Part 2B**, we called `int32_dot()` to compute the inner product for us.
@@ -17,7 +17,7 @@ API. Unlike `int32_dot()`, `vect_s32_dot()` does use the VPU to do its work.
 
 We'll see that using the VPU gives us a significant speed-up.
 
-### From `lib_xcore_math`
+## From `lib_xcore_math`
 
 This stage makes use of the following operations from `lib_xcore_math`:
 
@@ -42,7 +42,6 @@ end-before: -filter_sample
 `vect_s32_dot()` differs from `int32_dot()` in an important way that we need to
 account for.
 
-> From [`vect_s32.h`](TODO):
 > ```c
 > C_API
 > int64_t vect_s32_dot(
@@ -199,19 +198,24 @@ For full details about `vect_s32_dot()` see `lib_xcore_math`'s [documentation](h
 
 ## Results
 
-The inner loop in `vect_s32_dot()`'s implementation is 11 instructions long. The inner loop in `int32_dot()`'s implementation was only 4 instructions, so why is `vect_s32_dot()` so much faster?
+The inner loop in `vect_s32_dot()`'s implementation is 11 instructions long. The
+inner loop in `int32_dot()`'s implementation was only 4 instructions, so why is
+`vect_s32_dot()` so much faster?
 
-The XS3 VPU's vector registers are each 8 words long. The `VLMACCR` instruction used by `vect_s32_dot()` loads a vector (8 elements) from memory and performs 8 multiplications (and additions) all at once.
+The XS3 VPU's vector registers are each 8 words long. The `VLMACCR` instruction
+used by `vect_s32_dot()` loads a vector (8 elements) from memory and performs 8
+multiplications (and additions) all at once.
 
-So, while in `int32_dot()` we were performing a single multiplication and addition for each iteration of the loop, in `vect_s32_dot()` we perform 8. Naively, then, we should expect a speed-up of about
+So, while in `int32_dot()` we were performing a single multiplication and
+addition for each iteration of the loop, in `vect_s32_dot()` we perform 8.
+Naively, then, we should expect a speed-up of about
 
 $$
   \frac{8\text{ elements}}{11\text{ instructions}} \cdot \left(\frac{1 \text{ element}}{4\text{ instructions}}\right)^{-1} = \frac{32}{11}\approx 2.91
 $$
 
-In practice, due to other overhead, we see a speed-up here of about $2.4$ (computing output samples).
-
-## Results
+In practice, due to other overhead, we see a speed-up here of about $2.4$
+(computing output samples).
 
 ### Timing
 

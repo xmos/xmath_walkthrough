@@ -49,7 +49,7 @@ if os.path.isfile(settingsFile):
   with open(settingsFile) as infile:
     data = json.load(infile)
 print(data)
-title = data.get('title', 'TMP')
+title = data.get('title', 'XMath Tutorial')
 project = data.get('project', 'TMP')
 release = data.get('version', 'TBD')
 

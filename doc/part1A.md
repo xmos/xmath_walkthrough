@@ -27,9 +27,9 @@ structure of the firmware. [Common Code](common.md) briefly reviews some of the
 elements common to all stages. This page will zoom in and take the point-of-view
 of the `filter_task` thread in **Part 1A**, which actually does the filtering.
 
-The code specific to **Part 1A** is found in [`part1A.c`](TODO).
+The code specific to **Part 1A** is found in `part1A.c`.
 
-**Part 1A** uses the filter coefficients from [`filter_coef_double.c`](TODO).
+**Part 1A** uses the filter coefficients from `filter_coef_double.c`.
 
 ### Part 1A `filter_task()` Implementation
 

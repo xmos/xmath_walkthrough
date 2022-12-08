@@ -5,16 +5,16 @@ Before diving into stage-specific code, it is worth taking a brief look at some
 of the common code.
 
 All code common to all parts and stages can be found in the
-[`src/common/`](TODO) directory. However, note that each stage uses only _one_
-of the source files in [`src/common/filters/`](TODO).
+`src/common/` directory. However, note that each stage uses only _one_
+of the source files in `src/common/filters/`.
 
 Note that each stage of this tutorial will assume that the user has read the
 previous parts. This will help avoid reiterating information that was already
 said.
 
-### `main.xc`
+## `main.xc`
 
-[`main.xc`](TODO) defines the firmware application's entry point. `main()` is
+`main.xc` the firmware application's entry point. `main()` is
 defined in an XC file rather than a C file to make use of the XC language's
 convenient syntax for allocating channel resources and for bootstrapping the
 threads that will be running on each tile.
@@ -71,12 +71,12 @@ reports some timing information (collected by `filter_task`) back to
 
 The macros `APP_NAME`, `INPUT_WAV`, `OUTPUT_WAV` and `OUTPUT_JSON` are all defined it the particular stage's `CMakeLists.txt`.
 
-### `common.h`
+## `common.h`
 
-The [`common.h`](TODO) header includes several other boilerplate headers, and
+The `common.h` header includes several other boilerplate headers, and
 then defines several macros required by most stages.
 
-From [`common.h`](TODO):
+From `common.h`:
 ```c
 #define TAP_COUNT     (1024)
 #define FRAME_SIZE    (256)
@@ -99,49 +99,55 @@ process them as a batch. Additionally, when processing a batch, it is more
 convenient and more efficient to store the sample history in a single linear
 buffer. That buffer must then be `HISTORY_SIZE` elements long.
 
-### `misc_func.h`
+## `misc_func.h`
 
-The [`misc_func.h`](TODO) header contains several simple inline scalar functions required in various places throughout the tutorial. Future versions of `lib_xcore_math` will likely contain implementations of these functions, but for now our application has to define them.
+The `misc_func.h` header contains several simple inline scalar functions
+required in various places throughout the tutorial. Future versions of
+`lib_xcore_math` will likely contain implementations of these functions, but for
+now our application has to define them.
 
-### `filters/`
+## `filters/`
 
-The [`src/common/filters/`](TODO) directory contains 4 source files, each of which defines the same filter coefficients, but in different formats. Each stage's firmware uses only _one_ of these filters.
+The `src/common/filters/` directory contains 4 source files, each of
+which defines the same filter coefficients, but in different formats. Each
+stage's firmware uses only _one_ of these filters.
 
-#### `filter_coef_double.c` 
+### `filter_coef_double.c` 
 
-[`filter_coef_double.c`](TODO) contains the coefficients as an array of `double` elements:
+`filter_coef_double.c` contains the coefficients as an array of `double`
+elements:
 
 ```C
 const double filter_coef[TAP_COUNT] = {...};
 ```
 
-#### `filter_coef_float.c` 
+### `filter_coef_float.c` 
 
-[`filter_coef_float.c`](TODO) contains the coefficients as an array of `float` elements:
+`filter_coef_float.c` contains the coefficients as an array of `float` elements:
 
 ```C
 const float filter_coef[TAP_COUNT] = {...};
 ```
 
-#### `filter_coef_q2_30.c` 
+### `filter_coef_q2_30.c` 
 
-[`filter_coef_q2_30.c`](TODO) contains the coefficients as an array of `q2_30` elements. `q2_30` is a fixed-point type defined in `lib_xcore_math`. It will be described in more detail later.
+`filter_coef_q2_30.c` contains the coefficients as an array of `q2_30` elements. `q2_30` is a fixed-point type defined in `lib_xcore_math`. It will be described in more detail later.
 
 ```C
 const q2_30 filter_coef[TAP_COUNT] = {...};
 ```
 
-#### `filter_coef_q4_28.c` 
+### `filter_coef_q4_28.c` 
 
-[`filter_coef_q4_28.c`](TODO) contains the coefficients as an array of `q4_28` elements. `q4_28` is a fixed-point type defined in `lib_xcore_math`. It will be described in more detail later.
+`filter_coef_q4_28.c` contains the coefficients as an array of `q4_28` elements. `q4_28` is a fixed-point type defined in `lib_xcore_math`. It will be described in more detail later.
 
 ```C
 const q4_28 filter_coef[TAP_COUNT] = {...};
 ```
 
-### Timing
+## Timing
 
-Filter (time) performance is measured through the timing module in [`timing.h`](TODO). The implementation of `timing.c` is not important. What you will find in each stage's implementation are the following four calls:
+Filter (time) performance is measured through the timing module in `timing.h`. The implementation of `timing.c` is not important. What you will find in each stage's implementation are the following four calls:
 
 ```c
 timer_start(TIMING_SAMPLE);

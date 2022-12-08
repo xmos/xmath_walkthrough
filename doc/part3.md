@@ -281,7 +281,6 @@ Consider `vect_s16_mul() from `lib_xcore_math`'s Vector API. This
 function takes in two `int16_t` arrays and multiplies them element-wise to
 produce an `int16_t` output vector.
 
-From [`vect_s16.h`](TODO):
 ```c
 C_API
 headroom_t vect_s16_mul(
@@ -492,7 +491,6 @@ API have a companion "prepare" function. Usually this is the function's name wit
 
 For example, along with `vect_s16_mul()` is a function `vect_s16_mul_prepare()`:
 
-From [`vect_s16_prepare.h`](TODO):
 ```C
 C_API
 void vect_s16_mul_prepare(
@@ -515,7 +513,6 @@ In the case of `vect_s16_mul_prepare()`, `a_exp` and `a_shr` are _output_ parame
 
 Contrast this with `vect_s32_mul_prepare()`:
 
-From [`vect_s32_prepare.h`](TODO):
 ```C
 C_API
 void vect_s32_mul_prepare(
@@ -530,7 +527,6 @@ void vect_s32_mul_prepare(
 
 This function outputs 2 shift parameters, `b_shr` and `c_shr`, which match those required by `vect_s32_mul()`:
 
-From [`vect_s32.h`](TODO):
 ```C
 C_API
 headroom_t vect_s32_mul(
@@ -545,7 +541,6 @@ headroom_t vect_s32_mul(
 Finally, let's take a look at `vect_s32_dot_prepare()`, which we will encounter
 in **Part 3B**:
 
-From [`vect_s32_prepare.h`](TODO):
 ```C
 C_API
 void vect_s32_dot_prepare(

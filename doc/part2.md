@@ -33,16 +33,20 @@ more efficiently.
 function from `lib_xcore_math` which uses the VPU to greatly accelerate the
 arithmetic.
 
+## `lib_xcore_math` References
+
+* [`q1_31`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/types.h#L392-L402)
+
 ## Fixed-Point Background
 
 * Fixed-point types
 
-Note that `buff[]` is an array of `q1_31`. [`q1_31`](TODO) is a 32-bit integral
-type defined in `lib_xcore_math`. When dealing with 32-bit fixed-point
-arithmetic, we can always just use `int32_t` values, but that tells us nothing
-about the _logical_ values represented by the data. Because the exponent
-associated with fixed-point values is _fixed_, we can encode that information
-directly into the type of the variables and constants in which they're stored. 
+Note that `buff[]` is an array of `q1_31`. `q1_31` is a 32-bit integral type
+defined in `lib_xcore_math`. When dealing with 32-bit fixed-point arithmetic, we
+can always just use `int32_t` values, but that tells us nothing about the
+_logical_ values represented by the data. Because the exponent associated with
+fixed-point values is _fixed_, we can encode that information directly into the
+type of the variables and constants in which they're stored. 
 
 To that end, `lib_xcore_math` defines `q1_31` and many related type (e.g.
 `q2_30`, `q8_24`, etc) for representing the
@@ -84,7 +88,7 @@ fixed-point values. It will finish up with some in-depth examples.
 
 Whereas in **Part 1** the filter coefficients were implemented as a constant array of `double` (**Part 1A**) or `float` (**Stages 1** and **2**) values, in **Part 2** the filter coefficients are represented by an array of `q4_28` values (i.e. the `Q4.28` format). With `28` fractional bits, these coefficients have an implied exponent of `-28`.
 
-The filter coefficients in this part come from [`filter_coef_q4_28.c`](TODO).
+The filter coefficients in this part come from `filter_coef_q4_28.c`.
 
 Being an averaging FIR filter, all coefficients have the same logical value of
 $\frac{1}{1024} = 0.0009765625$. Let's convert this to `Q4.28`.
@@ -296,15 +300,18 @@ $$
 \end{aligned}
 $$
 
-Here we see that using $\hat{p}=-4$ begins to introduce quantization error, where again we find that the resolution is given directly by the exponent.
+Here we see that using $\hat{p}=-4$ begins to introduce quantization error,
+where again we find that the resolution is given directly by the exponent.
 
-In summary, for our example of $p = 6.03125$, we can represent $p$ exactly so long as 
+In summary, for our example of $p = 6.03125$, we can represent $p$ exactly so
+long as 
 
 $$
   -28 \le \hat{p} \le -5
 $$
 
-Going below that range immediately corrupts our value, and going above that range gradually corrupts it through quantization error.
+Going below that range immediately corrupts our value, and going above that
+range gradually corrupts it through quantization error.
 
 ### An Example (Vector)
 
@@ -320,9 +327,11 @@ often implied rather than explicit), while in BFP the exponent is chosen
 dynamically (usually) at runtime based on the data, and _must_ be represented
 explicitly.
 
-Consider the vector $\bar{p} = [0.005432, 1.2245, -0.5, -3.2]$. How do we go about choosing an exponent $\hat{p}$ for this vector?
+Consider the vector $\bar{p} = [0.005432, 1.2245, -0.5, -3.2]$. How do we go
+about choosing an exponent $\hat{p}$ for this vector?
 
-It turns out that even for fixed-point and BFP, the logic of choosing an exponent for a vector ultimately reduces to that of the scalar case:
+It turns out that even for fixed-point and BFP, the logic of choosing an
+exponent for a vector ultimately reduces to that of the scalar case:
 
 * We still need to avoid overflows in our mantissas
 * We still want as little quantization error as possible
@@ -351,7 +360,8 @@ $$
   \mathtt{INT32\_MIN} \le \mathtt{p}' \le \mathtt{INT32\_MAX} 
 $$
 
-Only, this time we're concerned about $\mathtt{p}'$ going too _negative_, so we look for the bound in the other direction.
+Only, this time we're concerned about $\mathtt{p}'$ going too _negative_, so we
+look for the bound in the other direction.
 
 $$
 \begin{aligned}
@@ -366,7 +376,8 @@ $$
 \end{aligned}
 $$
 
-Now we find that we'll have overflows in $\mathtt{p}[\,]$ if $\hat{p}$ is less than $-29$. Then 
+Now we find that we'll have overflows in $\mathtt{p}[\,]$ if $\hat{p}$ is less
+than $-29$. Then 
 
 $$
 \begin{aligned}
@@ -381,6 +392,10 @@ $$
 \end{aligned}
 $$
 
-We can see here that attempting to left-shift these mantissa values one bit would cause $\mathtt{p}[3]$ to overflow into the sign bit, corrupting the value. So, $-29$ is indeed the minimum exponent.
+We can see here that attempting to left-shift these mantissa values one bit
+would cause $\mathtt{p}[3]$ to overflow into the sign bit, corrupting the value.
+So, $-29$ is indeed the minimum exponent.
 
-In [**Part 3**](partC.md) we will see that there is a shortcut for computing exponents using another property we can extract from scalars and vectors called the **headroom**.
+In [**Part 3**](part3.md) we will see that there is a shortcut for computing
+exponents using another property we can extract from scalars and vectors called
+the **headroom**.

@@ -74,7 +74,7 @@ Finally, `ashr64()` and `sat32()` are used. `ashr64()` applies an arithmetic
 right-shift of `acc_shr` bits to the 64-bit accumulator and returns the 64-bit
 result. 
 
-> From [`misc_func.h`](TODO):
+> From `misc_func.h`:
 > ```c
 > // Signed, arithmetic right-shift of a 64-bit integer
 > static inline
@@ -93,7 +93,7 @@ result.
 values that can't be represented by an `int32_t` are saturated to their nearest
 representable value.
 
-> From [`misc_func.h`](TODO):
+> From `misc_func.h`:
 > ```c
 > // Saturate 64-bit integer to 32-bit bounds
 > static inline

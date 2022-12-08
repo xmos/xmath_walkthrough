@@ -10,11 +10,11 @@ Python scripts for converting existing digital filters (with floating-point
 coefficients) into a form compatible with xcore, and even generates code which
 can be directly compiled into the application.
 
-Specifically, for this example the script [`gen_fir_filter_s32.py`](TODO) was
-used, with [`coef.csv`](TODO) as input, to generate [`userFilter.c`](TODO) and
-[`userFilter.h`](TODO). The script generates a named filter, where the function
-names in the generated API are based on the filter name. In this example, the
-filter name (specified when calling the script) is "userFilter".
+Specifically, for this example the script `gen_fir_filter_s32.py` was used, with
+`coef.csv` as input, to generate `userFilter.c` and `userFilter.h`. The script
+generates a named filter, where the function names in the generated API are
+based on the filter name. In this example, the filter name (specified when
+calling the script) is "userFilter".
 
 The filters generated with these scripts allocate and manage their own memory,
 resulting in very simple API calls.
@@ -22,7 +22,9 @@ resulting in very simple API calls.
 ### From `lib_xcore_math`
 
 This stage does not directly call any functions from `lib_xcore_math`, but does
-make use of the [`gen_fir_filter_s32.py`](TODO) filter conversion script.
+make use of the
+[`gen_fir_filter_s32.py`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/script/gen_fir_filter_s32.py)
+filter conversion script.
 
 ## Generating Filters
 

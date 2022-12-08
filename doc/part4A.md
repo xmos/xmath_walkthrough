@@ -24,7 +24,7 @@ This page references the following operations from `lib_xcore_math`:
 
 ## Implementation
 
-**Part 4A** has its implementation split across two files, [`part4A.c`](TODO) and [`stage9.xc`](TODO). The only function implemented in `stage9.xc` is `filter_frame()`, and this is because writing it in XC allows us to take advantage of the XC language's convenient syntax for synchronous parallel operations using a `par` block.
+**Part 4A** has its implementation split across two files, `part4A.c` and `stage9.xc`. The only function implemented in `stage9.xc` is `filter_frame()`, and this is because writing it in XC allows us to take advantage of the XC language's convenient syntax for synchronous parallel operations using a `par` block.
 
 In fact, in **Part 4A**, the only function which is implemented differently than in **Part 3B** is `filter_frame()`.
 
