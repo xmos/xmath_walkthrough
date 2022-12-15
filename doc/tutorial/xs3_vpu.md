@@ -280,7 +280,7 @@ instruction being issued and `y` is the value of `vR[k]` afterwards, then the
 following relation must always hold:
 
 $$
-      -2\mathtt{x} \le \mathtt{y} \lt 2\mathtt{x}
+      -2\mathtt{x} \le \mathtt{y} < 2\mathtt{x}
 $$
 
 In other words, the `VLMUL` instruction _cannot_ be used to scale a value by a

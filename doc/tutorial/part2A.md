@@ -229,10 +229,10 @@ range is $[-2^{31},2^{31}-1)$. Then, the range for $y_k$ which avoids any
 overflow or saturation is
 
 $$
-   -2^{31} \le \mathtt{y}[k] \lt 2^{31} \\
-   -2^{31} \le y_k \cdot 2^{-\hat{y}} \lt 2^{31} \\
-   -2^{31} \cdot 2^{\hat{y}} \le y_k \cdot 2^{-\hat{y}} \cdot 2^{\hat{y}} \lt 2^{31} \cdot 2^{\hat{y}} \\
-   -2^{31+\hat{y}} \le y_k \lt 2^{31+\hat{y}} \\
+   -2^{31} \le \mathtt{y}[k] < 2^{31} \\
+   -2^{31} \le y_k \cdot 2^{-\hat{y}} < 2^{31} \\
+   -2^{31} \cdot 2^{\hat{y}} \le y_k \cdot 2^{-\hat{y}} \cdot 2^{\hat{y}} < 2^{31} \cdot 2^{\hat{y}} \\
+   -2^{31+\hat{y}} \le y_k < 2^{31+\hat{y}} \\
 $$
 
 Thus, if the underlying math dictates that $y_k$ is outside that range (for some

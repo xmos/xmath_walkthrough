@@ -104,19 +104,19 @@ representation-specific, but the overall mathematical logic is unified.
 ### Unified Logic
 
 Suppose we have a _vector_ of $N$ real values $\bar{x}$ to be represented, where
-the elements are $x_k$ for $k \in \set{0,1,...,(N-1)}$. We can describe an
+the elements are $x_k$ for $k \in \{0,1,...,(N-1)\}$. We can describe an
 abstract representation for particular value $x_k$ in a generalized way as:
 
 $$
     x_k \approx  m_k \cdot 2^{p_{\lfloor \frac{kL}{N} \rfloor }} \\
-    \text{for }k \in \set{0,1,...,(N - 1)}
+    \text{for }k \in \{0,1,...,(N - 1)\}
 $$
 
 That is, there is a vector of mantissas (of some bit-depth) $\bar{m}$, as well
 as a _vector_ of $L$ exponents $\bar{p}$. Here, each mantissa $m_k$ corresponds 
 to only one exponent, namely $p_{\lfloor\frac{kL}{N}\rfloor}$
 
-To simplify, we'll include an additional constraint $L \in \set{1,N}$. If $L=1$,
+To simplify, we'll include an additional constraint $L \in \{1,N\}$. If $L=1$,
 a single exponent is used for _all_ mantissas, and if $L=N$ then each mantissa
 gets _its own_ exponent.
 

@@ -13,7 +13,7 @@ being linear, the actual exponents associated with the input and output samples
 are not fixed, only their _relationship_ is. Specifically, it is the
 _difference_ between the input and output exponents that is fixed.
 
-### From `lib_xcore_math`
+## From `lib_xcore_math`
 
 This page references the following types and operations from `lib_xcore_math`:
 

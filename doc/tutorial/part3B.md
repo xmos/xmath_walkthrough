@@ -66,7 +66,7 @@ end-before: -filter_frame
 In **Part 3B**, `filter_frame()` is a little different than **Part 3A**. **Part
 3B** makes use of `vect_s32_dot_prepare()` from `lib_xcore_math` to help
 determine an output exponent and shift values for us. We saw
-`vect_s32_dot_prepare()` in [**Part 3**](part3.md#_prepare-functions-in-lib_xcore_math).
+`vect_s32_dot_prepare()` in [**Part 3**](part3.md).
 
 Briefly, `vect_s32_dot_prepare()` takes the exponents and headroom of the two
 input vectors as well as the length of the vectors and uses those to determine

@@ -4,6 +4,6 @@ implementations of a digital FIR filter, demonstrating the different ways this
 can be done and showing the performance trade-offs of the different
 implementations.
 
-See [this](doc/building.md) for instructions on configuring and building.
+See [this](doc/tutorial/building.md) for instructions on configuring and building.
 
-The tutorial entry point is [here](doc/intro.md).
+The tutorial entry point is [here](doc/tutorial/intro.md).

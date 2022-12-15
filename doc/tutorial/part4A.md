@@ -13,7 +13,7 @@ instead of [**Part 3C**](part3C.md) is because `lib_xcore_math`'s high-level BFP
 API will not play nicely with this sort of parallelism. For advanced usage like
 this, the lower level API is required.
 
-### From `lib_xcore_math`
+## From `lib_xcore_math`
 
 This page references the following operations from `lib_xcore_math`:
 

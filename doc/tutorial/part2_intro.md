@@ -1,5 +1,5 @@
 
-## Stages
+# Stages
 
 **Part 2A** migrates the filter implementation to use fixed-point arithmetic.
 Like **Parts** **1A** and **1B**, the implementation will be written in plain C
@@ -13,11 +13,11 @@ more efficiently.
 function from `lib_xcore_math` which uses the VPU to greatly accelerate the
 arithmetic.
 
-## `lib_xcore_math` References
+# `lib_xcore_math` References
 
 * [`q1_31`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/types.h#L392-L402)
 
-## Fixed-Point Background
+# Fixed-Point Background
 
 * Fixed-point types
 
@@ -45,7 +45,7 @@ indicates the `Q8.24` format with `24` fractional bits, and so on.
 * Fixed-point Arithmetic
 * Fixed-point support in `lib_xcore_math`
 
-## Component Functions
+# Component Functions
 
 Like in **Part 1**, the behavior of each stage in **Part 2** is defined by 4 component function:
 
@@ -64,7 +64,7 @@ then we will dive into the logic of choosing exponents to represent our
 fixed-point values. It will finish up with some in-depth examples.
 
 
-## **Part 2** Filter Coefficients
+# **Part 2** Filter Coefficients
 
 Whereas in **Part 1** the filter coefficients were implemented as a constant array of `double` (**Part 1A**) or `float` (**Stages 1** and **2**) values, in **Part 2** the filter coefficients are represented by an array of `q4_28` values (i.e. the `Q4.28` format). With `28` fractional bits, these coefficients have an implied exponent of `-28`.
 
@@ -94,7 +94,7 @@ come back to in **Part 3**. Using a minimal exponent generally means maximal
 precision. In this particular case, because our coefficients are a power of 2,
 any admissible exponent will be equivalent.
 
-## Scientific Notation for Fixed- and Floating-Point Values
+# Scientific Notation for Fixed- and Floating-Point Values
 
 We need to take our conceptual, mathematical objects (like filter coefficients)
 and represent them in code. In **Part 1** this was simple, because the scalar
@@ -135,7 +135,7 @@ given index, such as $x_k$, whereas for vectors of _mantissas_ we will use
 _brackets_ to denote the element at a given index, such as $\mathtt{x}[k]$. This
 is also meant to suggest a move from abstract math towards concrete code.  
 
-### An Example (Scalar)
+## An Example (Scalar)
 
 To make this concrete, consider the logical value $p = 6.03125$. Unpacking $p$, we have 
 
@@ -164,7 +164,7 @@ $$
 \begin{aligned}
   \mathtt{INT32\_MIN} \le &\mathtt{p} \le \mathtt{INT32\_MAX} \\
   -2^{31} \le &\mathtt{p} \le 2^{31} - 1 \\
-  -2^{31} \le &\mathtt{p} \lt 2^{31} \\
+  -2^{31} \le &\mathtt{p} < 2^{31} \\
 \end{aligned}
 $$
 
@@ -187,7 +187,7 @@ $$
 
 This tells us that $\hat{p}$ values _less than or equal to_ about $-28.4075$
 will force an overflow in $\mathtt{p}$, our `int32_t` value. Note that $\hat{p}$
-must be an _integer_, so the condition practically becomes $\hat{p} \lt -28$.
+must be an _integer_, so the condition practically becomes $\hat{p} < -28$.
 
 Let's check this. First, let's verify that $\hat{p}=-28$ works.
 
@@ -293,7 +293,7 @@ $$
 Going below that range immediately corrupts our value, and going above that
 range gradually corrupts it through quantization error.
 
-### An Example (Vector)
+## An Example (Vector)
 
 What if we have $\bar{p}$ instead of $p$ -- that is, if we need to choose an
 exponent $\hat{p}$ for representing a vector instead of a scalar?  In
@@ -327,7 +327,7 @@ In our case, we will call the largest magnitude element $p'$:
 $$
 \begin{aligned}
   p' &= p_{k} \\
-  k &= \argmax_n |p_n| \\
+  k &= \operatorname{argmax}_n |p_n| \\
   k &= 3 \\
   p' &= p_3 \\
   p' &= -3.2 \\
@@ -345,14 +345,14 @@ look for the bound in the other direction.
 
 $$
 \begin{aligned}
-  \mathtt{p}' \lt \mathtt{INT32\_MIN} \\
-  \mathtt{p}' \lt -2^{31} \\
-  p' \cdot 2^{-\hat{p}} \lt -2^{31} \\
-  \frac{p' \cdot 2^{-\hat{p}}}{p'} \gt \frac{-2^{31}}{p'} && \text{(division by negative)}\\
-  2^{-\hat{p}} \gt 671088640.0 \\
-  log_2(2^{-\hat{p}}) \gt log_2\left(671088640.0\right) \\
-  -\hat{p} \gt 29.32192 \\
-  \hat{p} \lt -29.32192 \\
+  \mathtt{p}' < \mathtt{INT32\_MIN} \\
+  \mathtt{p}' < -2^{31} \\
+  p' \cdot 2^{-\hat{p}} < -2^{31} \\
+  \frac{p' \cdot 2^{-\hat{p}}}{p'} > \frac{-2^{31}}{p'} && \text{(division by negative)}\\
+  2^{-\hat{p}} > 671088640.0 \\
+  log_2(2^{-\hat{p}}) > log_2\left(671088640.0\right) \\
+  -\hat{p} > 29.32192 \\
+  \hat{p} < -29.32192 \\
 \end{aligned}
 $$
 
@@ -362,7 +362,7 @@ than $-29$. Then
 $$
 \begin{aligned}
   \hat{p} &= -29 \\
-  \bar{p} &= [0.005432,1.2245,−0.5,−3.2] \\
+  \bar{p} &= [0.005432,1.2245,-0.5,-3.2] \\
   \\
   \mathtt{p}[k] &= p_k \cdot 2^{-\hat{p}} \\
                 &= p_k \cdot 2^{29} \\

@@ -7,7 +7,7 @@ floating-point (BFP) arithmetic.
 
 In **Part 3A** we will implement the BFP logic in C to ensure the reader sees everything that is happening. In the following two stages we will use functions from the `lib_xcore_math` library to assist us.
 
-### From `lib_xcore_math`
+## From `lib_xcore_math`
 
 This page references the following types and operations from `lib_xcore_math`:
 
@@ -20,7 +20,6 @@ This page references the following types and operations from `lib_xcore_math`:
 
 ## Implementation
 
----
 
 ```{literalinclude} ../../src/part3A/part3A.c
 ---
@@ -30,7 +29,7 @@ end-before: -calc_headroom
 ---
 ```
 
-As mentioned in [**Part 3**](part3.md#headroom), the headroom of a mantissa
+As mentioned in [**Part 3**](part3.md), the headroom of a mantissa
 vector is defined as the least headroom among its elements. Here `hr` is
 initialized to 32, as a 32-bit integer cannot have more than 32 bits of
 headroom, and we iterate over elements, finding the least headroom.
@@ -84,8 +83,8 @@ multiplication. Note that:
 
 $$
   \mathtt{INT32\_MAX}^2 
-      \lt \left|\mathtt{INT32\_MAX} \cdot \mathtt{INT32\_MIN}\right| 
-      \lt \mathtt{INT32\_MIN}^2
+      < \left|\mathtt{INT32\_MAX} \cdot \mathtt{INT32\_MIN}\right| 
+      < \mathtt{INT32\_MIN}^2
 $$
 
 `TAP_COUNT_LOG2` is $\log_2(1024)$. This value is the number of extra bits of

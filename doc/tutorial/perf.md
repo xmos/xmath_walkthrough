@@ -41,14 +41,14 @@ sample times were actually for 4 output samples instead of 1.
 The following bar charts show the timing info for each stage, except **Part 1A**
 (because it would obscure the rest of the stages otherwise).
 
-### Frame Times 
+## Frame Times 
 
 ![Frame Times Bar Plot](img/frame_time_bar.png)
 
-### Sample Times
+## Sample Times
 
 ![Sample Times Bar Plot](img/sample_time_bar.png)
 
-### Tap Times
+## Tap Times
 
 ![Tap Times Bar Plot](img/tap_time_bar.png)

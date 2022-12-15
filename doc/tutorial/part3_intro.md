@@ -329,16 +329,16 @@ $$
 -2^{15}\cdot (2^{15}-1) \le \,&\mathtt{b}[k] \cdot \mathtt{c}[k] \le (-2^{15})^2  
 \\
 -2^{30} + 2^{15} \le \,&\mathtt{b}[k] \cdot \mathtt{c}[k] \le 2^{30}  \\
--2^{30} \lt 
+-2^{30} < 
   \,&\mathtt{b}[k] \cdot \mathtt{c}[k] 
 \le 2^{30}  
 \\
 -2^{30} \cdot 2^{\hat{b}+\hat{c}}
-  \lt \,2^{\hat{b}+\hat{c}} \cdot &\mathtt{b}[k] \cdot \mathtt{c}[k]
+  < \,2^{\hat{b}+\hat{c}} \cdot &\mathtt{b}[k] \cdot \mathtt{c}[k]
 \le 2^{30} \cdot 2^{\hat{b}+\hat{c}}  
 \\
 -2^{30+\hat{b}+\hat{c}}
-  \lt \,2^{\hat{b}+\hat{c}} \cdot &\mathtt{b}[k] \cdot \mathtt{c}[k]
+  < \,2^{\hat{b}+\hat{c}} \cdot &\mathtt{b}[k] \cdot \mathtt{c}[k]
 \le 2^{30+\hat{b}+\hat{c}}  
 \\
 \end{aligned}
@@ -444,7 +444,7 @@ find that
 
 $$
 -2^{30-(h_b+h_c)}
-  \lt \mathtt{b}[k] \cdot \mathtt{c}[k]
+  < \mathtt{b}[k] \cdot \mathtt{c}[k]
 \le 2^{30-(h_b+h_c)}  
 $$
 
@@ -566,7 +566,7 @@ Field             | Description
 
 ### BFP Operations
 
-Several BFP operations will be encountered in **Part 3** when we get to [**Part 3C**](stage8.md).
+Several BFP operations will be encountered in **Part 3** when we get to [**Part 3C**](part3C.md).
 
 #### `bfp_s32_init()`
 

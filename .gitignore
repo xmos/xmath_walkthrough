@@ -5,3 +5,5 @@
 lib_xcore_math/
 xscope_fileio/
 xmos_cmake_toolchain/
+**/*.local.*
+**/*.local/

@@ -19,7 +19,7 @@ calling the script) is "userFilter".
 The filters generated with these scripts allocate and manage their own memory,
 resulting in very simple API calls.
 
-### From `lib_xcore_math`
+## From `lib_xcore_math`
 
 This stage does not directly call any functions from `lib_xcore_math`, but does
 make use of the
@@ -32,7 +32,7 @@ The `userFilter.c` and `userFilter.h` used in this stage were provided with this
 tutorial as a convenience. You can generate these files yourself using `gen_fir_filter_s32.py`. This will require Python 3 with numpy.
 
 ```sh
-$ python gen_fir_filter_s32.py -h
+> python gen_fir_filter_s32.py -h
 usage: gen_fir_filter_s32.py [-h] [--taps TAPS] [--out-dir OUT_DIR] [--input-headroom INPUT_HEADROOM] [--output-headroom OUTPUT_HEADROOM]
                              filter_name filter_coefficients
 ```
@@ -52,11 +52,11 @@ python ../../lib_xcore_math/lib_xcore_math/script/gen_fir_filter_s32.py --taps 1
 The output should be similar to the following:
 
 ```sh
-workspace\xmath_walkthrough\src\stage11$ python ..\..\lib_xcore_math\lib_xcore_math\script\gen_fir_filter_s32.py --taps 1024 userFilter coef.csv
+workspace/xmath_walkthrough/src/part4C> python ../../lib_xcore_math/lib_xcore_math/script/gen_fir_filter_s32.py --taps 1024 userFilter coef.csv
 Filter tap count: 1024
 Files to be written:
-  .\userFilter.h
-  .\userFilter.c
+  ./userFilter.h
+  ./userFilter.c
 ```
 
 The `--taps` option is used to ensure that the converted filter has the expected
