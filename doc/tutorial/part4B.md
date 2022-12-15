@@ -27,9 +27,9 @@ This page references the following types and operations from `lib_xcore_math`:
 The implementation for **Part 4B** is divided between 3 functions,
 `rx_frame()`, `tx_frame()` and `filter_task()`.
 
-### **Part 4B** `rx_frame()` Implementation
+---
 
-```{literalinclude} ../src/part4B/part4B.c
+```{literalinclude} ../../src/part4B/part4B.c
 ---
 language: C
 start-after: +rx_frame
@@ -44,9 +44,9 @@ object representing the filter handles its own state internally -- we don't need
 to account for the ordering of samples ourselves.
 
 
-### **Part 4B** `tx_frame()` Implementation
+---
 
-```{literalinclude} ../src/part4B/part4B.c
+```{literalinclude} ../../src/part4B/part4B.c
 ---
 language: C
 start-after: +tx_frame
@@ -57,9 +57,9 @@ end-before: -tx_frame
 This is identical to the `tx_frame()` found in **Part 2**.
 
 
-### **Part 4B** `filter_task()` Implementation
+---
 
-```{literalinclude} ../src/part4B/part4B.c
+```{literalinclude} ../../src/part4B/part4B.c
 ---
 language: C
 start-after: +filter_task
@@ -74,10 +74,11 @@ First, we `sample_buffer[]`, where we store input _and_ output samples, is only
 stores the sample history itself.
 
 Next, we now have a `filter_fir_s32_t` object called `fir_filter`.
-[`filter_fir_s32_t`](TODO) is defined in `lib_xcore_math` and represents our
-32-bit digital FIR filter. It must be initialized before it can be used.
+`filter_fir_s32_t` is defined in `lib_xcore_math` and represents our 32-bit
+digital FIR filter. It must be initialized before it can be used.
 
-Initialization of the filter is accomplished with a call to `filter_fir_s32_init()`:
+Initialization of the filter is accomplished with a call to
+`filter_fir_s32_init()`:
 
 
 > ```c
@@ -100,7 +101,8 @@ The parameter `tap_count` is the number of filter taps, and the final parameter
 `shift` is an arithmetic right-shift that is applied to the accumulator to
 produce a 32-bit output sample.
 
-What output shift value should be used for the filter?  Here we follow the same logic as in [**Part 2**](part2.md).
+What output shift value should be used for the filter?  Here we follow the same
+logic as in [**Part 2**](part2.md).
 
 $$
 \begin{aligned}

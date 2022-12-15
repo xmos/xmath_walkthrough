@@ -43,9 +43,9 @@ The result should be the same as the C implementation of `filter_sample()` from
 `filter_task()`, `rx_frame()` and `tx_frame()`. The only change is the
 implementation of `filter_sample()`.
 
-### Part 1C `filter_sample()` Implementation
+---
 
-```{literalinclude} ../src/part1C/part1C.c
+```{literalinclude} ../../src/part1C/part1C.c
 ---
 language: C
 start-after: +filter_sample

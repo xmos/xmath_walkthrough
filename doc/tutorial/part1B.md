@@ -25,9 +25,9 @@ of `float` values.
 Because **Part 1B** is so similar to **Part 1A**, implementations for
 `filter_task()`, `rx_frame()` and `tx_frame()` won't be shown here.
 
-### Part 1B `filter_sample()` Implementation
+---
 
-```{literalinclude} ../src/part1B/part1B.c
+```{literalinclude} ../../src/part1B/part1B.c
 ---
 language: C
 start-after: +filter_sample

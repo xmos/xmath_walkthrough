@@ -24,9 +24,9 @@ from using a dual-issue function written directly in assembly.
 In this part, `filter_task()`, `rx_frame()` and `tx_frame()` are identical to
 those in **Part 2A**.
 
-### **Part 2B** `filter_sample()` Implementation
+---
 
-```{literalinclude} ../src/part2B/part2B.c
+```{literalinclude} ../../src/part2B/part2B.c
 ---
 language: C
 start-after: +filter_sample
@@ -34,9 +34,10 @@ end-before: -filter_sample
 ---
 ```
 
-Notice that the only difference compared to **Part 2A** is that instead of a loop it is calling `int32_dot()`.
+Notice that the only difference compared to **Part 2A** is that instead of a
+loop it is calling `int32_dot()`.
 
-```{literalinclude} ../src/part2B/part2B.c
+```{literalinclude} ../../src/part2B/part2B.c
 ---
 language: C
 start-after: +int32_dot
@@ -51,14 +52,12 @@ $$
   \mathtt{int32\_dot} \to \sum_{k=0}^{\mathtt{length}-1} {\mathtt{x}[k] \cdot \mathtt{y}[k]}
 $$
 
-If you are interested, take a look at `int32_dot.S` for the
-implementation.
+If you are interested, take a look at `int32_dot.S` for the implementation.
 
-One thing to point out is the [inner loop](TODO) (from `.L_loop_top:` to
-`.L_loop_bot:`) of `int32_dot.S` is only 4 instructions long. A disassembly of
-the **Part 2A** firmware (`xobjdump -D bin/stage3.xe`) shows that in this case
-the inner loop of the (single-issue) `filter_frame()` in **Part 2A** is 7
-instructions long.
+One thing to point out is the inner loop (from `.L_loop_top:` to `.L_loop_bot:`)
+of `int32_dot.S` is only 4 instructions long. A disassembly of the **Part 2A**
+firmware (`xobjdump -D bin/stage3.xe`) shows that in this case the inner loop of
+the (single-issue) `filter_frame()` in **Part 2A** is 7 instructions long.
 
 ## Results
 

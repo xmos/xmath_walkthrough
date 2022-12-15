@@ -20,9 +20,9 @@ This page references the following types and operations from `lib_xcore_math`:
 
 ## Implementation
 
-### **Part 3A** `calc_headroom()` Implementation
+---
 
-```{literalinclude} ../src/part3A/part3A.c
+```{literalinclude} ../../src/part3A/part3A.c
 ---
 language: C
 start-after: +calc_headroom
@@ -39,9 +39,9 @@ headroom, and we iterate over elements, finding the least headroom.
 headroom of a signed 32-bit integer. It uses a native instruction `CLS`, which
 reports the number of leading sign bits of an integer.
 
-### **Part 3A** `filter_task()` Implementation
+---
 
-```{literalinclude} ../src/part3A/part3A.c
+```{literalinclude} ../../src/part3A/part3A.c
 ---
 language: C
 start-after: +filter_task
@@ -55,9 +55,9 @@ now `sample_history` and `frame_output` are `struct`s which track the exponent
 
 Notice that pointers to the exponent and headroom are also passed along to each of the functions being called. This is typical in block floating-point where you don't have a common object type representing the BFP vector (such as `lib_xcore_math`'s `bfp_s32_t`). It can get cumbersome, as in the call to `filter_frame()`, where _2_ BFP vectors are taken as arguments. Many operations involve 3 or more BFP vectors.
 
-### **Part 3A** `filter_frame()` Implementation
+---
 
-```{literalinclude} ../src/part3A/part3A.c
+```{literalinclude} ../../src/part3A/part3A.c
 ---
 language: C
 start-after: +filter_frame
@@ -118,9 +118,9 @@ would subtract `acc_shr` instead.
 
 Finally, the headroom of the output sample needs to be calculated, which we do with a call to `calc_headroom()`.
 
-### **Part 3A** `filter_sample()` Implementation
+---
 
-```{literalinclude} ../src/part3A/part3A.c
+```{literalinclude} ../../src/part3A/part3A.c
 ---
 language: C
 start-after: +filter_sample
@@ -130,9 +130,9 @@ end-before: -filter_sample
 
 `filter_sample()` looks familiar from **Part 2**. It is does the same thing as in **Part 2**, except that it takes `acc_shr` as a function parameter, instead of computing it based on the input, filter and output exponents.
 
-### **Part 3A** `tx_frame()` Implementation
+---
 
-```{literalinclude} ../src/part3A/part3A.c
+```{literalinclude} ../../src/part3A/part3A.c
 ---
 language: C
 start-after: +tx_frame
@@ -148,9 +148,9 @@ $$
   \vec{r} = \hat{d} - \hat{z}
 $$
 
-### **Part 3A** `rx_frame()` Implementation
+---
 
-```{literalinclude} ../src/part3A/part3A.c
+```{literalinclude} ../../src/part3A/part3A.c
 ---
 language: C
 start-after: +rx_frame
@@ -164,9 +164,9 @@ report the exponent associated with the input frame to the calling function.
 In our case we are receiving frames of PCM samples which all use the exponent
 `-31`.
 
-### **Part 3A** `rx_and_merge_frame()` Implementation
+---
 
-```{literalinclude} ../src/part3A/part3A.c
+```{literalinclude} ../../src/part3A/part3A.c
 ---
 language: C
 start-after: +rx_and_merge_frame

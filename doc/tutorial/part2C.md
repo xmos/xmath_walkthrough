@@ -29,9 +29,9 @@ This stage makes use of the following operations from `lib_xcore_math`:
 In this part, `filter_task()`, `rx_frame()` and `tx_frame()` are identical to
 those in **Part 2A** and **Part 2B**.
 
-### **Part 2C** `filter_sample()` Implementation
+---
 
-```{literalinclude} ../src/part2C/part2C.c
+```{literalinclude} ../../src/part2C/part2C.c
 ---
 language: C
 start-after: +filter_sample

@@ -28,9 +28,9 @@ This page references the following operations from `lib_xcore_math`:
 
 ## Implementation
 
-### **Part 3C** `calc_headroom()` Implementation
+---
 
-```{literalinclude} ../src/part3C/part3C.c
+```{literalinclude} ../../src/part3C/part3C.c
 ---
 language: C
 start-after: +calc_headroom
@@ -44,9 +44,9 @@ the `bfp_s32_t` object, and returns that headroom. In this case
 `calc_headroom()` also returns that headroom, though in **Part 3C** the returned
 value is not needed and not used.
 
-### **Part 3C** `filter_task()` Implementation
+---
 
-```{literalinclude} ../src/part3C/part3C.c
+```{literalinclude} ../../src/part3C/part3C.c
 ---
 language: C
 start-after: +filter_task
@@ -71,9 +71,9 @@ be avoided when unnecessary. In particular, it usually does not make sense to
 calculate headroom if the element buffer hasn't already been populated with
 initial values.
 
-### **Part 3C** `filter_frame()` Implementation
+---
 
-```{literalinclude} ../src/part3C/part3C.c
+```{literalinclude} ../../src/part3C/part3C.c
 ---
 language: C
 start-after: +filter_frame
@@ -147,10 +147,10 @@ instead.
 
 
 
-### **Part 3C** `filter_sample()` Implementation
+---
 
 
-```{literalinclude} ../src/part3C/part3C.c
+```{literalinclude} ../../src/part3C/part3C.c
 ---
 language: C
 start-after: +filter_sample
@@ -170,10 +170,10 @@ vectors representd by a `bfp_s32_t` need to be initialized before they can be
 used. In this case `bfp_filter_coef` is initialized in `filter_task()` prior to
 entering the main thread loop.
 
-### **Part 3C** `tx_frame()` Implementation
+---
 
 
-```{literalinclude} ../src/part3C/part3C.c
+```{literalinclude} ../../src/part3C/part3C.c
 ---
 language: C
 start-after: +tx_frame
@@ -191,10 +191,10 @@ sample into the channel. **Part 3C**, however, accomplishes this just by calling
 
 `bfp_s32_use_exponent()` coerces a BFP vector to use a particular exponent, shifting the elements as necessary to accomplish that. It is an easy way to move from a block floating-point domain (this stage's filter) into a fixed-point domain (the `wav_io` thread).
 
-### **Part 3C** `rx_frame()` Implementation
+---
 
 
-```{literalinclude} ../src/part3C/part3C.c
+```{literalinclude} ../../src/part3C/part3C.c
 ---
 language: C
 start-after: +rx_frame
@@ -206,10 +206,10 @@ end-before: -rx_frame
 only real difference is that the mantissas, exponent and headroom are now
 encapsulated inside the `bfp_s32_t` object.
 
-### **Part 3C** `rx_and_merge_frame()` Implementation
+---
 
 
-```{literalinclude} ../src/part3C/part3C.c
+```{literalinclude} ../../src/part3C/part3C.c
 ---
 language: C
 start-after: +rx_and_merge_frame

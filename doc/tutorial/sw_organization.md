@@ -7,22 +7,24 @@ file in from the host machine, processes the `wav` file audio through a digital
 FIR filter, and writes out the processed audio to a new `wav` file on the host
 machine.
 
-> TODO: Add diagram showing data flow between host and xcore.
-
 ## Repositories
 
 There are three Git repositories associated with this tutorial.
 
-The [`xmath_walkthrough`](TODO) repository has the content of the tutorial (both
-documentation and application logic) and defines the workspace layout (through
-[`west.yml`](TODO)).
+The [`xmath_walkthrough`](https://github.com/astewart-xmos/xmath_walkthrough)
+repository has the content of the tutorial (both documentation and application
+logic) and defines the workspace layout (through
+[`west.yml`](https://github.com/astewart-xmos/xmath_walkthrough/blob/master/west.yml)).
 
-The [`lib_xcore_math`](TODO) repository is a library of optimized functions for
-fast arithmetic on xcore XS3. Much of this tutorial is about demonstrating how
-pieces of this library are used.
+The
+[`lib_xcore_math`](https://github.com/xmos/lib_xcore_math/tree/v2.1.1/lib_xcore_math)
+repository is a library of optimized functions for fast arithmetic on xcore XS3.
+Much of this tutorial is about demonstrating how pieces of this library are
+used.
 
-The [`xmos_cmake_toolchain`](TODO) repository contains boilerplate `.cmake`
-files which tell CMake how to use the xcore toolchain.
+The [`xmos_cmake_toolchain`](https://github.com/xmos/xmos_cmake_toolchain)
+repository contains boilerplate `.cmake` files which tell CMake how to use the
+xcore toolchain.
 
 The `xmath_walkthrough` and `xmos_cmake_toolchain` repositories are cloned into
 the root of the tutorial workspace. The `lib_xcore_math` repository is cloned
@@ -40,13 +42,19 @@ manipulation.
 
 The library contains many low-level functions for very quickly processing
 vectors of data (primarily 16- and 32-bit) in various ways -- its [vector
-API](TODO). The VPU is very fast, but it implements only integer arithmetic. To
-that end, the library also provides a block floating-point [(BFP) API](TODO)
+API](https://github.com/xmos/lib_xcore_math/tree/v2.1.1/lib_xcore_math/api/xmath/vect).
+The VPU is very fast, but it implements only integer arithmetic. To that end,
+the library also provides a block floating-point [(BFP)
+API](https://github.com/xmos/lib_xcore_math/tree/v2.1.1/lib_xcore_math/api/xmath/bfp)
 which allows the VPU to be used for fixed-precision (rather than fixed-range)
 arithmetic.
 
-`lib_xcore_math` also has APIs for [Fast Fourier Transforms](TODO), [linear
-digial filters](TODO) and a small [scalar arithmetic API](TODO).
+`lib_xcore_math` also has APIs for [Fast Fourier
+Transforms](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/fft.h),
+[linear digial
+filters](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/filter.h)
+and a small [scalar arithmetic
+API](https://github.com/xmos/lib_xcore_math/tree/v2.1.1/lib_xcore_math/api/xmath/scalar).
 
 This purpose this tutorial is not to demonstrate everything available in
 `lib_xcore_math`. Rather, it is meant to demonstrate how floating-point
@@ -100,6 +108,7 @@ Tile 1 (`timer_report_task`):
 1. Waits for `wav_io_task` to engage it in a simple back and forth handshake.
 2. Reports its collected timing info to Tile 1 using a channel.
 
+![img/sw-flow.png](img/sw-flow.png)
 
 The application is a two-tile application with the following threads running
 (except [**Part 4A**](part4A.md)).

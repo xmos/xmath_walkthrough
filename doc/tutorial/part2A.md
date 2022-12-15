@@ -12,9 +12,9 @@ optimized floating-point from [**Part 1C**](part1C.md).
 
 ## Implementation
 
-### Part 2A `filter_task()` Implementation
+---
 
-```{literalinclude} ../src/part2A/part2A.c
+```{literalinclude} ../../src/part2A/part2A.c
 ---
 language: C
 start-after: +filter_task
@@ -27,9 +27,9 @@ Here we can see that `filter_task()` in **Part 2A** closely resembles the
 `float` as the type for its buffers, `q1_31` is used. Beyond that, the same
 kinds of steps are involved in the processing.
 
-### Part 2A `rx_frame()` Implementation
+---
 
-```{literalinclude} ../src/part2A/part2A.c
+```{literalinclude} ../../src/part2A/part2A.c
 ---
 language: C
 start-after: +rx_frame
@@ -43,9 +43,9 @@ choice we made in **Part 1** when converting inputs to floating-point.
 `rx_frame()` just reads the input samples from the channel `c_audio` and
 populates the provided buffer with those samples in reverse order.
 
-### Part 2A `tx_frame()` Implementation
+---
 
-```{literalinclude} ../src/part2A/part2A.c
+```{literalinclude} ../../src/part2A/part2A.c
 ---
 language: C
 start-after: +tx_frame
@@ -55,9 +55,9 @@ end-before: -tx_frame
 
 `tx_frame()` in **Part 2A** is also simple. The output exponent associated with these stages (and all others) is also `-31`, and so the output values are also given the `q1_31` type, indicating their `Q1.31` format.
 
-### Part 2A `filter_sample()` Implementation
+---
 
-```{literalinclude} ../src/part2A/part2A.c
+```{literalinclude} ../../src/part2A/part2A.c
 ---
 language: C
 start-after: +filter_sample

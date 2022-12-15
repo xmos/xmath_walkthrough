@@ -33,9 +33,9 @@ This page references the following operations from `lib_xcore_math`:
 In **Part 3B**, `filter_task()`, `rx_frame()`, and `tx_frame()` are all
 identical to those in **Part 3A**, and are omitted here.
 
-### **Part 3B** `calc_headroom()` Implementation
+---
 
-```{literalinclude} ../src/part3B/part3B.c
+```{literalinclude} ../../src/part3B/part3B.c
 ---
 language: C
 start-after: +calc_headroom
@@ -53,9 +53,9 @@ elements every 3 instructions.
 A quick examination of **Part 3A**'s `calc_headroom()` disassembly indicates
 that it handles 1 element about every 10 instructions.
 
-### **Part 3B** `filter_frame()` Implementation
+---
 
-```{literalinclude} ../src/part3B/part3B.c
+```{literalinclude} ../../src/part3B/part3B.c
 ---
 language: C
 start-after: +filter_frame
@@ -90,9 +90,9 @@ instead added a total of 8 between the `b_shr` and `c_shr` output by
 multiplication, adding to them may result in unnecessary loss of precision.
 ```
 
-### **Part 3B** `filter_sample()` Implementation
+---
 
-```{literalinclude} ../src/part3B/part3B.c
+```{literalinclude} ../../src/part3B/part3B.c
 ---
 language: C
 start-after: +filter_sample
@@ -104,9 +104,9 @@ end-before: -filter_sample
 `vect_s32_dot_prepare()` and calls `vect_s32_dot()` much like in **Part 2C**,
 except now the 64-bit result is returned.
 
-### **Part 3B** `rx_and_merge_frame()` Implementation
+---
 
-```{literalinclude} ../src/part3B/part3B.c
+```{literalinclude} ../../src/part3B/part3B.c
 ---
 language: C
 start-after: +rx_and_merge_frame

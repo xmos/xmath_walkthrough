@@ -31,9 +31,9 @@ The code specific to **Part 1A** is found in `part1A.c`.
 
 **Part 1A** uses the filter coefficients from `filter_coef_double.c`.
 
-### Part 1A `filter_task()` Implementation
+---
 
-```{literalinclude} ../src/part1A/part1A.c
+```{literalinclude} ../../src/part1A/part1A.c
 ---
 language: C
 start-after: +filter_task
@@ -72,11 +72,9 @@ allows the samples to stay fully ordered.
 
 Finally, the output frame is sent to `tile[0]` and it repeats the loop.
 
+---
 
-
-### Part 1A `filter_sample()` Implementation
-
-```{literalinclude} ../src/part1A/part1A.c
+```{literalinclude} ../../src/part1A/part1A.c
 ---
 language: C
 start-after: +filter_sample
@@ -105,10 +103,9 @@ $\frac{1}{1024} = 0.0009765625$.
 ```c
 const double filter_coef[TAP_COUNT] = { ... };
 ```
+---
 
-### Part 1A `rx_frame()` Implementation
-
-```{literalinclude} ../src/part1A/part1A.c
+```{literalinclude} ../../src/part1A/part1A.c
 ---
 language: C
 start-after: +rx_frame
@@ -126,9 +123,9 @@ into `double` values as we receive them.
 reverse chronological order, as is expected by `filter_sample()`.
 
 
-### Part 1A `tx_frame()` Implementation
+---
 
-```{literalinclude} ../src/part1A/part1A.c
+```{literalinclude} ../../src/part1A/part1A.c
 ---
 language: C
 start-after: +tx_frame

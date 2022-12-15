@@ -1,19 +1,4 @@
 
-# Part 4: Miscellaneous
-
-**Part 4** contains several stages which demonstrate various mostly-unrelated
-features.
-
-```{toctree}
----
-maxdepth: 1
----
-./part4A.md
-./part4B.md
-./part4C.md
-```
-
-
 ## Stages
 
 **Part 4A** demonstrates how an application can use multiple hardware threads to

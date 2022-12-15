@@ -28,9 +28,9 @@ This page references the following operations from `lib_xcore_math`:
 
 In fact, in **Part 4A**, the only function which is implemented differently than in **Part 3B** is `filter_frame()`.
 
-### **Part 4A** `filter_frame()` Implementation
+---
 
-```{literalinclude} ../src/part4A/part4A.c
+```{literalinclude} ../../src/part4A/part4A.c
 ---
 language: C
 start-after: +filter_frame
