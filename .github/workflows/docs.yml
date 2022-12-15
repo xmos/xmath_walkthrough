@@ -24,7 +24,7 @@ on:
 
 jobs:
   build_documentation:
-    name: Build and package PDF documentation
+    name: Build PDF Tutorial Document
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -38,7 +38,7 @@ jobs:
       
       - name: Build documentation
         run: |
-          docker run --rm -t -u "$(id -u):$(id -g)" -v ${{ github.workspace }}:/build -e REPO:/build PDF=1 SKIP_LINK=1 ghcr.io/xmos/doc_builder:main
+          docker run --rm -t -u "$(id -u):$(id -g)" -v ${{ github.workspace }}:/build PDF=1 SKIP_LINK=1 ghcr.io/xmos/doc_builder:main
           
       - name: Save documentation artifacts
         uses: actions/upload-artifact@v2
