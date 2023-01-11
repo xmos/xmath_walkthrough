@@ -27,3 +27,5 @@ add_subdirectory( part3C )
 add_subdirectory( part4A )
 add_subdirectory( part4B )
 add_subdirectory( part4C )
+
+add_subdirectory( appendixA )

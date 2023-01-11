@@ -32,13 +32,7 @@ interference between the hardware threads.
 
 `vCTRL` is a 12-bit register with the following contents:
 
-```{eval-rst}
-+-----------------+---+---+---+---+---+---+---+---+---+---+---+---+
-| Bit             |11 |10 | 9 | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 |
-+=================+===+===+===+===+===+===+===+===+===+===+===+===+
-| Field           | Mode          | Shift | Magnitude             |
-+-----------------+---------------+-------+-----------------------+
-```
+![vCTRL diagram](img/vCTRL.png)
 
 The `Mode` field controls how the contents of the vector registers are
 interpreted during instruction execution. Valid modes are 32-bit
@@ -74,19 +68,8 @@ instruction used.
 The interpretation of the contents of the vector registers depends upon the
 configured VPU mode and the instruction being used.
 
-```{eval-rst}
-+-----------------+-------------------------------------------------------------------+
-| Mode            | Element Index                                                     |
-+=================+===================+===============+===============+===============+
-| 32-bit (Complex)|       3           |              ...              |       0       |
-+-----------------+-----------+-------+-------+-------+-------+-------+-------+-------+
-| 32-bit          |   7       |   6   |              ...              |   1   |   0   |
-+-----------------+-----+-----+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-| 16-bit          | 15  | 14  |                      ...              | 3 | 2 | 1 | 0 |
-+-----------------+--+--+--+--+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  8-bit          |31|30|                            ...              |7|6|5|4|3|2|1|0|
-+-----------------+--+--+--+--+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-```
+![vReg diagram](img/vReg.png)
+
 
 For most VPU instructions, in 32-bit mode the vector register' contents will be
 interpreted as 8 `int32_t` values. In 16-bit mode, 16 `int16_t` values. And in
@@ -136,23 +119,9 @@ Conceptually, in 8- and 16-bit modes the `vD:vR` vector accumulator data
 structure resembles the following (where `vD[k]` and `vR[k]` are each 16 bits
 wide):
 
-```{eval-rst}
-+-------------+---------------------------------+
-| Accmulator  | :code:`int32_t`                 |
-| Index       +----------------+----------------+
-|             |:code:`int16_t` |:code:`uint16_t`|
-+=============+================+================+
-| 0           | :code:`vD[0]`  | :code:`vR[0]`  |
-+-------------+----------------+----------------+
-| 1           | :code:`vD[0]`  | :code:`vR[1]`  |
-+-------------+----------------+----------------+
-| ...         | ...                             |
-+-------------+----------------+----------------+
-| 14          | :code:`vD[14]` | :code:`vR[14]` |
-+-------------+----------------+----------------+
-| 15          | :code:`vD[15]` | :code:`vR[15]` |
-+-------------+----------------+----------------+
-```
+![vAcc16 diagram](img/vAcc16.png)
+
+
 
 ```{note}
 Notice that `vR[k]` in this case can be thought of as an _unsigned_ 16-bit
@@ -186,23 +155,7 @@ _64_ bits will still be used to represent the accumulator. When accumulating in
 32-bit mode, the signed 40-bit result is sign-extended up through the most
 significant 24 bits of each `vD[k]`.
 
-```{eval-rst}
-+-------------+---------------------------------+
-| Accmulator  | :code:`int64_t`                 |
-| Index       +----------------+----------------+
-|             |:code:`int32_t` |:code:`uint32_t`|
-+=============+================+================+
-| 0           | :code:`vD[0]`  | :code:`vR[0]`  |
-+-------------+----------------+----------------+
-| 1           | :code:`vD[0]`  | :code:`vR[1]`  |
-+-------------+----------------+----------------+
-| ...         | ...                             |
-+-------------+----------------+----------------+
-| 6           | :code:`vD[6]`  | :code:`vR[6]`  |
-+-------------+----------------+----------------+
-| 7           | :code:`vD[7]`  | :code:`vR[7]`  |
-+-------------+----------------+----------------+
-```
+![vAcc32 diagram](img/vAcc32.png)
 
 ```{note}
 None of the complex 32-bit instructions use `vR` and `vD` as accumulators. The 
