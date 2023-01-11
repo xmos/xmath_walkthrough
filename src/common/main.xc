@@ -13,6 +13,7 @@ extern "C" {
   extern void filter_task(chanend c_audio_data);
 }
 
+//// +main
 int main(){
   // Channel used for communicating audio data between tile[0] and tile[1].
   chan c_audio_data;
@@ -48,3 +49,4 @@ int main(){
   }
   return 0;
 }
+//// -main

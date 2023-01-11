@@ -9,52 +9,21 @@ All code common to all parts and stages can be found in the
 of the source files in `src/common/filters/`.
 
 Note that each stage of this tutorial will assume that the user has read the
-previous parts. This will help avoid reiterating information that was already
-said.
+previous parts. This will help avoid reiterating information.
 
 ## `main.xc`
 
-`main.xc` the firmware application's entry point. `main()` is
-defined in an XC file rather than a C file to make use of the XC language's
-convenient syntax for allocating channel resources and for bootstrapping the
-threads that will be running on each tile.
+`main.xc`, the firmware application's entry point. `main()` is defined in an XC
+file rather than a C file to make use of the XC language's convenient syntax for
+allocating channel resources and for bootstrapping the threads that will be
+running on each tile.
 
-```c
-int main(){
-  // Channel used for communicating audio data between tile[0] and tile[1].
-  chan c_audio_data;
-  // Channel used for reporting timing info from tile[1] after the signal has
-  // been processed.
-  chan c_timing;
-
-  par {
-    // One thread runs on tile[0]
-    on tile[0]: 
-    {
-      // Called so xscope will be used for prints instead of JTAG.
-      xscope_config_io(XSCOPE_IO_BASIC);
-
-      printf("Running Application: %s\n", APP_NAME);
-
-      // This is where the app will spend all its time.
-      wav_io_task(c_audio_data, 
-                  c_timing, 
-                  INPUT_WAV,    // These three macros are defined per-target
-                  OUTPUT_WAV,   // in the CMake project.
-                  OUTPUT_JSON);
-      
-      // Once wav_io_task() returns we are done.
-      _Exit(0);
-    }
-
-    // Two threads on tile[1].
-    // tiny task which just sits waiting to report timing info back to tile[0]
-    on tile[1]: timer_report_task(c_timing);
-    // The thread which does the signal processing.
-    on tile[1]: filter_task(c_audio_data);
-  }
-  return 0;
-}
+```{literalinclude} ../../src/common/main.xc
+---
+language: C
+start-after: +main
+end-before: -main
+---
 ```
 
 One thread is spawned on `tile[0]`, `wav_io_task()`, which handles all file IO
@@ -69,7 +38,8 @@ simply waits until the application is almost ready to terminate, and then
 reports some timing information (collected by `filter_task`) back to
 `wav_io_task` where the performance info can be written out to a text file.
 
-The macros `APP_NAME`, `INPUT_WAV`, `OUTPUT_WAV` and `OUTPUT_JSON` are all defined it the particular stage's `CMakeLists.txt`.
+The macros `APP_NAME`, `INPUT_WAV`, `OUTPUT_WAV` and `OUTPUT_JSON` are all
+defined it the particular stage's `CMakeLists.txt`.
 
 ## `common.h`
 
@@ -84,10 +54,10 @@ From `common.h`:
 ```
 
 `TAP_COUNT` is the order of the digital FIR filter being implemented. It is the
-number of filter coefficients we have. It is the number of multiplications and
-additions necessary (arithmetically speaking) to compute the filter output. And
-it is also the minimum input sample history size needed to compute the filter
-output for a particular time step.
+number of filter coefficients. It is the number of multiplications and additions
+necessary (arithmetically speaking) to compute the filter output. And it is also
+the minimum input sample history size needed to compute the filter output for a
+particular time step.
 
 Rather than `filter_task` receiving input samples one-by-one, it receives new
 input samples in frames. Each frame of input samples will contain `FRAME_SIZE`

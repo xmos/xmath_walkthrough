@@ -47,7 +47,8 @@ indicates the `Q8.24` format with `24` fractional bits, and so on.
 
 # Component Functions
 
-Like in **Part 1**, the behavior of each stage in **Part 2** is defined by 4 component function:
+Like in **Part 1**, the behavior of each stage in **Part 2** is defined by 4
+component function:
 
 * `rx_frame()`
 * `tx_frame()`
@@ -57,7 +58,9 @@ Like in **Part 1**, the behavior of each stage in **Part 2** is defined by 4 com
 These functions serve essentially the same role in **Part 2** that they did in
 **Part 1**.
 
-Three of those functions, `filter_task()`, `rx_frame()` and `tx_frame()` use the exact same implementation for all three stages. The only thing that changes between these stages is the `filter_sample()` implementation.
+Three of those functions, `filter_task()`, `rx_frame()` and `tx_frame()` use the
+exact same implementation for all three stages. The only thing that changes
+between these stages is the `filter_sample()` implementation.
 
 In this page we will take a look at those functions common to each stage, and
 then we will dive into the logic of choosing exponents to represent our
@@ -66,7 +69,11 @@ fixed-point values. It will finish up with some in-depth examples.
 
 # **Part 2** Filter Coefficients
 
-Whereas in **Part 1** the filter coefficients were implemented as a constant array of `double` (**Part 1A**) or `float` (**Stages 1** and **2**) values, in **Part 2** the filter coefficients are represented by an array of `q4_28` values (i.e. the `Q4.28` format). With `28` fractional bits, these coefficients have an implied exponent of `-28`.
+Whereas in **Part 1** the filter coefficients were implemented as a constant
+array of `double` (**Part 1A**) or `float` (**Stages 1** and **2**) values, in
+**Part 2** the filter coefficients are represented by an array of `q4_28` values
+(i.e. the `Q4.28` format). With `28` fractional bits, these coefficients have an
+implied exponent of `-28`.
 
 The filter coefficients in this part come from `filter_coef_q4_28.c`.
 
@@ -85,7 +92,8 @@ $$
 \end{aligned}
 $$
 
-So in `Q4.28`, each of our filter coefficients should be represented by the integer value `0x40000`.
+So in `Q4.28`, each of our filter coefficients should be represented by the
+integer value `0x40000`.
 
 Using the `Q4.28` format was our choice. Normally when choosing a representation
 for a fixed-point data it's a good idea to use the lowest exponent which avoids
@@ -103,14 +111,19 @@ about. And so there was no need to reason about the mantissas and exponents of
 individual values or vectors.
 
 Beginning in this part, we will find that we need to take those conceptual,
-mathematical objects (like real numbers) and reason about them. We need to be able to represent and manipulate them both _abstractly_ (as in the equations you will find in subsequent pages) and in code.
+mathematical objects (like real numbers) and reason about them. We need to be
+able to represent and manipulate them both _abstractly_ (as in the equations you
+will find in subsequent pages) and in code.
 
 To that end we introduce a new notation which will be used throughout the
 remainder of this tutorial.
 
-Suppose $x$ is a real value -- a abstract, _mathematical_ object -- that needs
+Suppose $x$ is a real value -- an abstract, _mathematical_ object -- that needs
 to be represented explicitly using integers (because _conceptual_ objects can't
-appear in _actual_ code). To do this it needs a mantissa and exponent. This is essentially the same thing as [scientific notation](https://en.wikipedia.org/wiki/Scientific_notation), but using powers of $2$ instead of $10$.
+appear in _actual_ code). To do this it needs a mantissa and exponent. This is
+essentially the same thing as [scientific
+notation](https://en.wikipedia.org/wiki/Scientific_notation), but using powers
+of $2$ instead of $10$.
 
 Rather than choose arbitrary new letters to represent each of these things,
 which would quickly become a confusing alphabet soup, henceforth we will adopt a

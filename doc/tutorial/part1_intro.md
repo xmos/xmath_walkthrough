@@ -153,9 +153,9 @@ FPU, including a single cycle fused multiply-accumulate.
 
 ### PCM-Floating-point Conversion
 
-In each stage of **Part 1**, PCM samples receives from `tile[0]` are converted
+In each stage of **Part 1**, PCM samples received from `tile[0]` are converted
 to floating-point, and floating-point output samples are converted to PCM
-samples before being sent to `tile[0]`. These to steps happen in the
+samples before being sent to `tile[0]`. These two steps happen in the
 `frame_rx()` and `frame_tx()` functions respectively.
 
 The actual input and output sample values going between tiles are all raw
@@ -172,13 +172,13 @@ tutorial.
 ```{note} 
 The reason the assumed exponent is arbitrary is because we're implementing a 
 _linear_ digital filter. If the filter was not linear (e.g. if there was a 
-square root somewhere in the logic) the output values would differ depending 
-upon our choice of input exponent.
+square root somewhere in the logic) the output values would differ by more than 
+a simple scale factor, depending upon our choice of input exponent.
 ```
 
 
 To see the logic of this conversion, consider a 32-bit PCM sample being received
-with a value of `0x2000000`. In **Part 1A** `ldexp()` is used to perform the
+with a value of `0x20000000`. In **Part 1A** `ldexp()` is used to perform the
 conversion as
 
 $$

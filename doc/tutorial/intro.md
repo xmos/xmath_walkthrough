@@ -30,7 +30,7 @@ Each stage
 
 ### Part 1 -- Floating-point
 
-The part implements the FIR filter using floating-point arithmetic.
+This part implements the FIR filter using floating-point arithmetic.
 Floating-point arithmetic is the easiest way to implement the digital filter
 because the application developer need not worry (much) about the dynamic range
 of variables and need not manually manage the book-keeping of exponents and
@@ -41,7 +41,7 @@ implementation, as the xcore device only has a scalar floating-point unit.
 
 ### Part 2 -- Fixed-point
 
-The part implements the FIR filter using fixed-point arithmetic. Once an
+This part implements the FIR filter using fixed-point arithmetic. Once an
 application developer overcomes the conceptual hurdle of reasoning about
 exponents and conversion between fixed-point representations, fixed-point
 arithmetic is a convenient and fast alternative to floating-point arithmetic.
@@ -88,3 +88,12 @@ digital filter API.
 |                | [Part 4B](part4B.md) | `lib_xcore_math` digital filter API
 |                | [Part 4C](part4C.md) | `lib_xcore_math` filter generation script
 
+## Appendix
+
+This tutorial also contains an appendix where additional useful information that
+doesn't otherwise fit into the main body of the tutorial is provided. The 
+examples in the appendix are presented with much less discussion than the main
+tutorial.
+
+The examples in the appendix do not share any code with the examples from the
+main tutorial.
