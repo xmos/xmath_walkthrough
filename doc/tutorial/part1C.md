@@ -10,8 +10,7 @@ Rather than relying on the compiler to produce fast floating-point logic,
 `vect_f32_dot()` was hand-written in optimized XS3 assembly to go as quickly as
 possible. Here we expect to see another significant performance boost.
 
-The main reason for this speed-up is that the C compiler does not, by
-default, emit dual-issue implementations of C functions.
+One of the main reasons for this speed-up is that the C compiler does not, by default, emit dual-issue implementations of C functions. Dual-issue code often allows inner loops to be significantly shortened, usually at the cost of program size.
 
 ### From `lib_xcore_math`
 
