@@ -74,7 +74,7 @@ appropriate shift to be applied to the accumulator when `filter_sample()` is
 called.
 
 $$
-\mathtt{INT32\_SQUARE\_MAX\_LOG2} = \log_2(\mathtt{INT32\_MIN}) 
+\mathtt{INT32\_SQUARE\_MAX\_LOG2} = \log_2(\mathtt{INT32\_MIN}^2) 
     = \log_2((-2^{31})^2) = \log_2(2^{62}) = 62
 $$
 

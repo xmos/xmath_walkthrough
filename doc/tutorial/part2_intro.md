@@ -37,7 +37,8 @@ be understood to contain a particular number of fractional bits.
 
 The type `q1_31` corresponds to the Q-format `Q1.31`. That is a 32-bit value
 (`1+31`) with `1` integer bit and `31` fractional bits. Likewise, `q8_24`
-indicates the `Q8.24` format with `24` fractional bits, and so on.
+indicates the `Q8.24` format with `8` integer bits and `24` fractional bits, and
+so on.
 
 
 

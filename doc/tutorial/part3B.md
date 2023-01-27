@@ -77,7 +77,7 @@ There is a complication here. `vect_s32_dot()` (and `filter_sample()`) return
 `int64_t` values. (This is typical for 32-bit vector functions in
 `lib_xcore_math` which return scalars, such as `vect_s32_dot()`,
 `vect_s32_energy()` and `vect_s32_sum()`). Because the VPU's accumulators in
-32-bit more are 40 bits, we know that to be safe we need to shift the result an
+32-bit mode are 40 bits, we know that to be safe we need to shift the result an
 extra 8 bits.
 
 So, we add 8 to the exponent given by vect_s32_dot_prepare() and shift the

@@ -114,7 +114,7 @@ end-before: -rx_frame
 ```
 
 `rx_frame()` accepts a frame of audio data over a channel. Note that to
-demonstrte a fully floating-point implementation, we would ideally be directly
+demonstrate a fully floating-point implementation, we would ideally be directly
 receiving our sample data as `double` values, but that would complicate things
 for little benefit, so instead we are just converting the received PCM samples
 into `double` values as we receive them.

@@ -48,7 +48,7 @@ The `Mode` also determines how headroom information is recorded in the
 `Magnitude` field.
 
 The `Shift` field controls the shifting behavior used by several instructions
-(`VLADSB`, VFTFB`, `VFTFF`, `VFTTB`, `VFTTF`). Specifically, it allows the
+(`VLADSB`, `VFTFB`, `VFTFF`, `VFTTB`, `VFTTF`). Specifically, it allows the
 result of these operations to be shifted one bit right or left (or not shifted).
 This is particularly useful for efficiently managing headroom while performing
 FFTs.

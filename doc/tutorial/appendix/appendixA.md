@@ -26,7 +26,7 @@ samples, as that enables us to perform the conversion more efficiently than
 converting individual samples.
 ```
 
-Because the code paths for the floating-point logic involved is sensitive do the
+Because the code path for the floating-point logic involved is sensitive to the
 data values, random filter weights and input data were used.
 
 The filters created in this application have orders ranging from 64 taps to 1024

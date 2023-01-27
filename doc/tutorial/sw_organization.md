@@ -56,9 +56,9 @@ filters](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/x
 and a small [scalar arithmetic
 API](https://github.com/xmos/lib_xcore_math/tree/v2.1.1/lib_xcore_math/api/xmath/scalar).
 
-This purpose this tutorial is not to demonstrate everything available in
+The purpose this tutorial is not to demonstrate everything available in
 `lib_xcore_math`. Rather, it is meant to demonstrate how floating-point
-arithmetic can be implemented and optimized on xcore.ai, and to help the user
+algorithms can be implemented and optimized on xcore.ai, and to help the user
 understand the arithmetic logic involved in the optimizations. So, ultimately
 this tutorial will only present a small fraction of the APIs provided by
 `lib_xcore_math`, focused on the particular case of a digital FIR filter.
@@ -90,7 +90,7 @@ which, in broad strokes, does the following:
 Tile 0 (`wav_io_task`):
 1. Opens and reads in the (entire) `input.wav` file from the host.
 2. Uses an xcore channel to transfer one frame of input audio to Tile 1.
-3. Waits for a frame of processed audio to be transferred back from Tile 0.
+3. Waits for a frame of processed audio to be transferred back from Tile 1.
 4. Repeats steps 2 and 3 until all input audio has been processed.
 5. Retrieve some simple performance info from a second thread on Tile 1 (also
    using an xcore channel).
@@ -115,9 +115,9 @@ The application is a two-tile application with the following threads running
 
 | Tile      | Entry Point           | Description |
 |-----------|-----------------------|-------------|
-| `tile[0]` | `wav_io_task()`     | Responsible for decoding and encoding the input and output `wav` files and framing the audio data.
-| `tile[1]` | `filter_task()`     | Responsible for producing filtered output audio from input audio.
-| `tile[1]` | `timer_report_task()` | Tiny thread responsible only for reporting performance info back `tile[0]` at the end of execution.
+| `tile[0]` |`wav_io_task()`| Handles `wav` file decoding and framing.
+| `tile[1]` |`filter_task()`| Filters input audio to produce output.
+| `tile[1]` |`timer_report_task()`| Reports performance info back to `tile[0]`.
 
 > Note: Where necessary, this tutorial refers to the threads running on the
 > device by the name of the thread entry point as a shorthand. It should be clear
