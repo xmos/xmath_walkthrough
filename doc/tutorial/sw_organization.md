@@ -11,10 +11,10 @@ machine.
 
 There are three Git repositories associated with this tutorial.
 
-The [`xmath_walkthrough`](https://github.com/xmos/xmath_walkthrough)
+The [`xmath_walkthrough`](https://github.com/xmos/xmath_walkthrough/tree/v1.0)
 repository has the content of the tutorial (both documentation and application
 logic) and defines the workspace layout (through
-[`west.yml`](https://github.com/xmos/xmath_walkthrough/blob/master/west.yml)).
+[`west.yml`](https://github.com/xmos/xmath_walkthrough/tree/v1.0/west.yml)).
 
 The
 [`lib_xcore_math`](https://github.com/xmos/lib_xcore_math/tree/v2.1.1/lib_xcore_math)
