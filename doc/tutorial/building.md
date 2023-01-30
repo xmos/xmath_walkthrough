@@ -22,7 +22,7 @@ contents of that zip file into your workspace root.
 If you have the tool West installed[^1], use the following:
 
 ```
-west init -m https://github.com/xmos/xmath_walkthrough/tree/v1.0
+west init -m https://github.com/xmos/xmath_walkthrough/
 west update
 ```
 
@@ -31,7 +31,7 @@ west update
 Otherwise, you can use git to clone the repositories directly:
 
 ```
-git clone https://github.com/xmos/xmath_walkthrough/tree/v1.0
+git clone https://github.com/xmos/xmath_walkthrough/
 git clone https://github.com/xmos/xmos_cmake_toolchain
 cd xmath_walkthrough
 git clone -b v2.1.1 https://github.com/xmos/lib_xcore_math
