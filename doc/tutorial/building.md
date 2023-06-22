@@ -54,9 +54,9 @@ Where `<PLATFORM_FLAG>` depends on your operating system and available tools.
 
 | OS      | Build Tool  | `<PLATFORM_FLAG>`     |
 | ------- | ----------- | --------------------- |
-| Windows | GNU Make    | `-G"Unix Makefiles"`  |
+| MacOS   | GNU Make    | `-G"Unix Makefiles"`  |
 | Windows | NMake       | `-G"NMake Makefiles"` |
-| Linux   | make        | `-G"Unix Makefiles"`  |
+| Linux   | Gnu Make    | `-G"Unix Makefiles"`  |
 
 
 ## Building
