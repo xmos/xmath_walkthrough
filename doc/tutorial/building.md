@@ -100,7 +100,7 @@ Available XMOS Devices
 
 If the command is successful and a device is listed, you should be all set.
 
-To run the application firmware, do following from your workspace root:
+To run the application firmware, do the following from your workspace root:
 
 ```
 xrun --xscope bin/<STAGE>.xe
@@ -116,5 +116,11 @@ xrun --xscope bin/part2C.xe
 The executed stage should output two files, an output wav file, and a JSON file
 containing the performance info. Both are placed in the `out\` directory within
 your workspace root.
+
+To create the `out\` directory run the following command in the workspace root.
+
+```
+mkdir out
+```
 
 [^1]: West can be installed using: `python -m pip install west`
