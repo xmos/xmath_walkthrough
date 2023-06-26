@@ -50,9 +50,14 @@ From your workspace root:
 cmake -B build -S xmath_walkthrough -DCMAKE_TOOLCHAIN_FILE=xmos_cmake_toolchain/xs3a.cmake <WINDOWS_PLATFORM_FLAG>
 ```
 
+  Note: Normally NMake is recommended as the CMake project generator in Windows.
+  However, as of XMOS tools version 15.2.1, there is a tools bug which causes a
+  build failure when using NMake as the CMake project generator for this
+  project. [Ninja](https://ninja-build.org/) is suggested as an alternative.
+
 Where `<WINDOWS_PLATFORM_FLAG>` is only necessary on Windows:
 
-`-G "NMake Makefiles"` 
+`-G "Ninja"` 
 
 
 ## Building
