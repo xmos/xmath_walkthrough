@@ -32,8 +32,8 @@ Otherwise, you can use git to clone the repositories directly:
 
 ```
 git clone https://github.com/xmos/xmath_walkthrough/
-git clone https://github.com/xmos/xmos_cmake_toolchain
 cd xmath_walkthrough
+git clone https://github.com/xmos/xmos_cmake_toolchain
 git clone -b v2.1.1 https://github.com/xmos/lib_xcore_math
 cd ..
 ```
@@ -47,16 +47,12 @@ device firmware used in this tutorial.
 From your workspace root:
 
 ```
-cmake -B build -S xmath_walkthrough -DCMAKE_TOOLCHAIN_FILE=xmos_cmake_toolchain/xs3a.cmake <PLATFORM_FLAG>
+cmake -B build -S xmath_walkthrough -DCMAKE_TOOLCHAIN_FILE=xmos_cmake_toolchain/xs3a.cmake <WINDOWS_PLATFORM_FLAG>
 ```
 
-Where `<PLATFORM_FLAG>` depends on your operating system and available tools.
+Where `<WINDOWS_PLATFORM_FLAG>` is only necessary on Windows:
 
-| OS      | Build Tool  | `<PLATFORM_FLAG>`     |
-| ------- | ----------- | --------------------- |
-| MacOS   | GNU Make    | `-G"Unix Makefiles"`  |
-| Windows | NMake       | `-G"NMake Makefiles"` |
-| Linux   | Gnu Make    | `-G"Unix Makefiles"`  |
+`-G "NMake Makefiles"` 
 
 
 ## Building

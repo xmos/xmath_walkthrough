@@ -8,4 +8,4 @@ manifest:
     - name: xmos_cmake_toolchain
       url: https://github.com/xmos/xmos_cmake_toolchain
       revision: main
-      path: xmos_cmake_toolchain
+      path: xmath_walkthrough/xmos_cmake_toolchain
