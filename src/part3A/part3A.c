@@ -51,7 +51,7 @@ void rx_frame(
   timer_start(TIMING_FRAME);
   
   // Make sure the headroom is correct
-  calc_headroom(frame_in, FRAME_SIZE);
+  *frame_in_hr = calc_headroom(frame_in, FRAME_SIZE);
 }
 //// -rx_frame
 
