@@ -1,5 +1,5 @@
 
-# Part 1A
+# Part 1A: Our first implementation of the digital FIR filter
 
 **Part 1A** is our first implementation of the digital FIR filter. Much of the
 code found in subsequent stages will resemble the code found here.

@@ -1,5 +1,5 @@
 
-# Part 2A
+# Part 2A: Moving to a fixed-point implementation
 
 In **Part 2A** we drop floating-point arithmetic in favor of fixed-point
 arithmetic. **Part 2A**, like [**Part 1B**](part1B.md), implements the inner
@@ -11,8 +11,6 @@ Ultimately we will find that fixed-point written in plain C is slower than the
 optimized floating-point from [**Part 1C**](part1C.md).
 
 ## Implementation
-
----
 
 ```{literalinclude} ../../src/part2A/part2A.c
 ---

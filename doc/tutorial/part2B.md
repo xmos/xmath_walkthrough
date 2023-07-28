@@ -1,5 +1,5 @@
 
-# Part 2B
+# Part 2B: Trying a dual-issue assembly optimization
 
 Like [**Part 2A**](part2A.md), **Part 2B** implements the FIR filter
 using fixed-point arithmetic. 

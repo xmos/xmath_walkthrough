@@ -1,5 +1,4 @@
-
-# Part 1C
+# Part 1C: Introducing a vector operation
 
 Like [**Part 1B**](part1B.md), **Part 1C** implements the FIR filter using
 single-precision floating-point arithmetic. However, instead of implementing the
@@ -12,13 +11,13 @@ possible. Here we expect to see another significant performance boost.
 
 One of the main reasons for this speed-up is that the C compiler does not, by default, emit dual-issue implementations of C functions. Dual-issue code often allows inner loops to be significantly shortened, usually at the cost of program size.
 
-### From `lib_xcore_math`
+## From `lib_xcore_math`
 
 This stage makes use of the following operations from `lib_xcore_math`:
 
 * [`vect_f32_dot()`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/vect/vect_s32.h#L399-L480)
 
-#### `vect_f32_dot()`
+### `vect_f32_dot()`
 
 ```C
 C_API

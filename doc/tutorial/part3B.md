@@ -1,5 +1,4 @@
-
-# Part 3B
+# Part 3B: BFP FIR filter using the vecor API
 
 Like [**Part 3A**](part3A.md), **Part 3B** implements the FIR filter 
 using block floating-point arithmetic.

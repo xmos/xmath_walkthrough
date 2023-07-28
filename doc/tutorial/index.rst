@@ -1,14 +1,14 @@
-.. _sw_xvf3800_user_guide:
+.. _lib_xcore_math_tutorial:
 
 .. include:: <isonum.txt>
 
 ####################################
-XCORE.AI + `lib_xcore_math` TUTORIAL 
+XCORE.AI `lib_xcore_math` Tutorial 
 ####################################
 
 .. warning::
 
-	This documentation structure is under development.  Please contribute and extend but don't use as reference material yet!
+	This documentation structure is under development.
 
 
 .. toctree::

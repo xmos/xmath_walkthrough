@@ -32,7 +32,7 @@ data values, random filter weights and input data were used.
 The filters created in this application have orders ranging from 64 taps to 1024
 taps.
 
-### Results
+### FIR Results
 
 The following sections present the measured results from running the
 application. In all cases the device was running with a core clock rate of 600
@@ -151,7 +151,7 @@ are: forward real FFT, inverse real FFT, forward complex FFT, inverse complex
 FFT. Each is measured using inputs of lengths $16, 32, 64, 128, 256, 512,$ and
 $1024$.
 
-### Results
+### FFT Results
 
 All results were obtained running on a single hardware thread with a core clock
 rate of 600MHz.

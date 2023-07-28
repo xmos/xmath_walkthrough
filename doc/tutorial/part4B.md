@@ -1,5 +1,5 @@
 
-# Part 4B
+# Part 4B: The `lib_xcore_math` digital filter API
 
 **Part 4B** takes a very different approach than all previous stages. **Part
 4B** uses the [digital filter
