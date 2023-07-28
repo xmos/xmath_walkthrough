@@ -4,19 +4,19 @@
 
 ```{eval-rst}
 .. doxygenfunction:: vect_s32_dot
-   :project: XCORE MATH TUTORIAL
+   :project: XCORE.AI MATH
    :outline:
 
 .. doxygenfunction:: vect_s32_mul
-   :project: XCORE MATH TUTORIAL
+   :project: XCORE.AI MATH
    :outline:
 
 .. doxygenfunction:: vect_s32_headroom
-   :project: XCORE MATH TUTORIAL
+   :project: XCORE.AI MATH
    :outline:
 
 .. doxygenfunction:: bfp_s32_headroom
-   :project: XCORE MATH TUTORIAL
+   :project: XCORE.AI MATH
    :outline:
 
 Detailed documentation:
@@ -38,7 +38,7 @@ For example, along with `vect_s16_mul()` is a function `vect_s16_mul_prepare()`:
 
 ```{eval-rst}
 .. doxygenfunction:: vect_s16_mul_prepare
-   :project: XCORE MATH TUTORIAL
+   :project: XCORE.AI MATH
    :outline:
 ```
 
@@ -55,7 +55,7 @@ Contrast this with `vect_s32_mul_prepare()`:
 
 ```{eval-rst}
 .. doxygenfunction:: vect_s32_mul_prepare
-   :project: XCORE MATH TUTORIAL
+   :project: XCORE.AI MATH
    :outline:
 ```
 
@@ -66,7 +66,7 @@ in **Part 3B**:
 
 ```{eval-rst}
 .. doxygenfunction:: vect_s32_dot_prepare
-   :project: XCORE MATH TUTORIAL
+   :project: XCORE.AI MATH
    :outline:
 ```
 

@@ -8,28 +8,28 @@ lib_xcore_math functions used in this tutorial.
 .. _anchor_vect_s32_dot:
 
 .. doxygenfunction:: vect_s32_dot
-   :project: XCORE MATH TUTORIAL
+   :project: XCORE.AI MATH
 
 ----
 
 .. _anchor_vect_s32_mul:
 
 .. doxygenfunction:: vect_s32_mul
-   :project: XCORE MATH TUTORIAL
+   :project: XCORE.AI MATH
 
 ----
 
 .. _anchor_vect_s32_headroom:
 
 .. doxygenfunction:: vect_s32_headroom
-   :project: XCORE MATH TUTORIAL
+   :project: XCORE.AI MATH
 
 ----
 
 .. _anchor_bfp_s32_headroom:
 
 .. doxygenfunction:: bfp_s32_headroom
-   :project: XCORE MATH TUTORIAL
+   :project: XCORE.AI MATH
 
 
 
