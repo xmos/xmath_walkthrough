@@ -3,7 +3,7 @@
 PROJECT_NAME           = lib_xcore_math
 PROJECT_BRIEF          = "VPU-optimized math for the XMOS xcore architecture"
 
-INPUT                  = ../lib_xcore_math/lib_xcore_math/api  ../lib_xcore_math/doc/src
+INPUT                  = ../lib_xcore_math/lib_xcore_math/api  ../lib_xcore_math/doc/programming_guide
 
 PREDEFINED             = C_API= EXTERN_C= 
 
