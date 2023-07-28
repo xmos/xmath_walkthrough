@@ -1,0 +1,6 @@
+[submodule "xmos_cmake_toolchain"]
+	path = xmos_cmake_toolchain
+	url = git@github.com:xmos/xmos_cmake_toolchain.git
+[submodule "lib_xcore_math"]
+	path = lib_xcore_math
+	url = git@github.com:xmos/lib_xcore_math.git
