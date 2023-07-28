@@ -38,7 +38,7 @@ jobs:
       
       - name: Build documentation
         run: |
-          docker run --rm -t -u "$(id -u):$(id -g)" -v ${{ github.workspace }}:/build -e PDF=1 -e SKIP_LINK=1 -e DOXYGEN_INCLUDE=/build/doc/Doxyfile.inc ghcr.io/xmos/doc_builder:main || echo "Container appears to have falsely reported an error. Ignoring error."
+          docker run --rm -t -u "$(id -u):$(id -g)" -v ${{ github.workspace }}:/build -e PDF=1 -e SKIP_LINK=1 -e DOXYGEN_INPUT=ignore -e DOXYGEN_INCLUDE=/build/doc/Doxyfile.inc ghcr.io/xmos/doc_builder:main || echo "Container appears to have falsely reported an error. Ignoring error."
           
       - name: Save documentation artifacts
         uses: actions/upload-artifact@v2
