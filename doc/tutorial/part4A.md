@@ -1,5 +1,5 @@
 
-# Part 4A
+# Part 4A: Multi-threaded BFP
 
 Up to this point, all previous stages do all of their filter computation in a
 single hardware thread. Each tile on an xcore XS3 device has 8 hardware threads

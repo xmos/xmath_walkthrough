@@ -1,5 +1,5 @@
 
-# Part 4C
+# Part 4C: The `lib_xcore_math` filter generation script
 
 In [**Part 4B**](part4B.md), `lib_xcore_math`'s digital filter API was used to
 implement the FIR filter. **Part 4C** also makes use of the FIR filter API, but

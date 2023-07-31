@@ -53,7 +53,7 @@ situations this may lead to a lack of precision, and in others it may lead to
 overflows or saturation. In the end fixed-point is ideal only when the system's
 input values or internal states do not vary over a wide dynamic range.
 
-### Part 3 -- Block Floating-point
+### Part 3 -- Block Floating-point (BFP)
 
 The third part implements the FIR filter using block floating-point (BFP)
 arithmetic. Unlike fixed-point, BFP allows the relevant objects to vary greatly

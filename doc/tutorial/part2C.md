@@ -1,5 +1,4 @@
-
-# Part 2C
+# Part 2C: Using the VPU to accelrate things
 
 Like [**Part 2B**](part2B.md), **Part 2C** implements the FIR filter
 using fixed-point arithmetic. 

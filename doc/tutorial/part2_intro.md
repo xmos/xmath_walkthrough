@@ -1,18 +1,3 @@
-
-# Stages
-
-**Part 2A** migrates the filter implementation to use fixed-point arithmetic.
-Like **Parts** **1A** and **1B**, the implementation will be written in plain C
-so the reader sees everything that is going on.
-
-**Part 2B** replaces the plain C implementation of `filter_sample()` from **Part
-2A** with a custom assembly routine which uses the scalar arithmetic unit much
-more efficiently.
-
-**Part 2C** replaces the custom assembly routine with a call to a library
-function from `lib_xcore_math` which uses the VPU to greatly accelerate the
-arithmetic.
-
 # `lib_xcore_math` References
 
 * [`q1_31`](https://github.com/xmos/lib_xcore_math/blob/v2.1.1/lib_xcore_math/api/xmath/types.h#L392-L402)
@@ -68,7 +53,7 @@ then we will dive into the logic of choosing exponents to represent our
 fixed-point values. It will finish up with some in-depth examples.
 
 
-# **Part 2** Filter Coefficients
+# Part 2 Filter Coefficients
 
 Whereas in **Part 1** the filter coefficients were implemented as a constant
 array of `double` (**Part 1A**) or `float` (**Stages 1** and **2**) values, in

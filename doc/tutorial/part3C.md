@@ -1,5 +1,4 @@
-
-# Part 3C
+# Part 3C: BFP FIR filter using the `lib_xcore_math` BFP API
 
 In **Part 3C** we finally use `lib_xcore_math`'s block floating-point (BFP) API.
 
@@ -27,8 +26,6 @@ This page references the following operations from `lib_xcore_math`:
 
 
 ## Implementation
-
----
 
 ```{literalinclude} ../../src/part3C/part3C.c
 ---

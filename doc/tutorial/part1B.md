@@ -1,5 +1,5 @@
 
-# Part 1B
+# Part 1B: Single-precision floating-point FIR, in a C loop
 
 Like [**Part 1A**](part1A.md), **Part 1B** implements the FIR filter using
 floating-point logic written in a plain C loop. Instead of using

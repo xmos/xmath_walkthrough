@@ -1,5 +1,4 @@
-
-# Part 3A
+# Part 3A: BFP FIR filter using plain C
 
 In the previous 3 stages the FIR filter was implemented using fixed-point
 arithmetic. In the next three stages the filter will be implemented using block

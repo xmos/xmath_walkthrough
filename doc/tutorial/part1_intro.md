@@ -1,18 +1,4 @@
-
-## Stages
-
-**Part 1A** implements the FIR using floating-point arithmetic with
-double-precision floating-point values. It is implemented in plain C so that
-nothing is hidden from the reader.
-
-**Part 1B** is nearly identical to **Part 1A**, except single-precision
-floating-point values are used. It is also implemented in plain C.
-
-**Part 1C** uses single-precision floating-point values like **Part 1B**, but
-will use a library function from `lib_xcore_math` to do the heavy lifting, both
-simplifying the implementation and getting a hefty performance boost.
-
-## Floating-Point Background
+# Floating-Point Background
 
 When non-integral values need to be represented in code, a
 [floating-point](https://en.wikipedia.org/wiki/Floating-point_arithmetic)
@@ -101,7 +87,7 @@ floating-point. All four of these can be seen as specializations of a more
 general arithmetic, where the details of manipulating the values are
 representation-specific, but the overall mathematical logic is unified.
 
-### Unified Logic
+## Unified Logic
 
 Suppose we have a _vector_ of $N$ real values $\bar{x}$ to be represented, where
 the elements are $x_k$ for $k \in \{0,1,...,(N-1)\}$. We can describe an
@@ -151,7 +137,7 @@ Each of these flavors of arithmetic has their own advantages and disadvantages.
 On xcore.ai, single-precision `float` operations are accelerated by a hardware
 FPU, including a single cycle fused multiply-accumulate.
 
-### PCM-Floating-point Conversion
+## PCM-Floating-point Conversion
 
 In each stage of **Part 1**, PCM samples received from `tile[0]` are converted
 to floating-point, and floating-point output samples are converted to PCM
@@ -255,7 +241,7 @@ And so, using an output exponent of $-31$, the range of floating-point values
 which can be converted to a 32-bit integer without overflows is $[-1.0, 1.0)$.
 
 
-## Component Functions
+# Component Functions
 
 In **Part 1**, each stage's behavior is defined by 4 component functions:
 
@@ -275,7 +261,7 @@ When looking at the code for each stage, these are the functions we'll examine.
 The _signatures_ for these functions are _not_ the same for all stages.
 ```
 
-### `filter_task()`
+## `filter_task()`
 
 This is the thread entry-point for the filtering thread. This function will
 generally declare needed buffers for input and output sample data, initialize
@@ -286,13 +272,13 @@ samples (using `rx_frame()`), compute one frame's worth of output audio samples
 (using `filter_sample()`) and then send out the frame of output samples back to
 the `wav_io` thread on tile 0 (using `tx_frame()`).
 
-### `filter_sample()`
+## `filter_sample()`
 
 Each call to `filter_sample()` will compute exactly one output sample using the
 history of received samples. The implementation of this function will change for
 every stage throughout this tutorial.
 
-### `rx_frame()`
+## `rx_frame()`
 
 This function accepts a frame of input audio samples from the `wav_io` thread
 running on tile 0 via a channel. In most cases, this function will store the
@@ -304,7 +290,7 @@ We happen to be using a symmetric filter, so the ordering isn't actually
 important in our case. However, in general the order does matter.
 ```
 
-### `tx_frame()`
+## `tx_frame()`
 
 This function uses a channel to send a frame of output audio samples back to the
 `wav_io` thread on tile 0.

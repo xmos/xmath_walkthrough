@@ -17,25 +17,13 @@ available to do this.
 If you received this tutorial as a `.zip` file, you can simply extract the
 contents of that zip file into your workspace root.
 
-### Using West
-
-If you have the tool West installed[^1], use the following:
-
-```
-west init -m https://github.com/xmos/xmath_walkthrough/
-west update
-```
-
-### Without West
+### From GitHub
 
 Otherwise, you can use git to clone the repositories directly:
 
 ```
-git clone https://github.com/xmos/xmath_walkthrough/
-cd xmath_walkthrough
-git clone https://github.com/xmos/xmos_cmake_toolchain
-git clone -b v2.1.1 https://github.com/xmos/lib_xcore_math
-cd ..
+git clone --recurse https://github.com/xmos/xmath_walkthrough/
+
 ```
 
 ## Configure CMake Build
